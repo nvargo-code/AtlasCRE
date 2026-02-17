@@ -1,0 +1,136 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Tenant {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+  users     User[]
+}
+
+model User {
+  id             String            @id @default(cuid())
+  email          String            @unique
+  passwordHash   String
+  name           String?
+  role           Role              @default(USER)
+  tenantId       String
+  tenant         Tenant            @relation(fields: [tenantId], references: [id])
+  createdAt      DateTime          @default(now())
+  savedSearches  SavedSearch[]
+  favorites      FavoriteListing[]
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+model ListingSource {
+  id            String           @id @default(cuid())
+  name          String           @unique
+  slug          String           @unique
+  baseUrl       String?
+  enabled       Boolean          @default(true)
+  lastRunAt     DateTime?
+  lastRunStatus String?
+  rawListings   RawListing[]
+  variants      ListingVariant[]
+}
+
+model RawListing {
+  id         String        @id @default(cuid())
+  sourceId   String
+  source     ListingSource @relation(fields: [sourceId], references: [id])
+  externalId String
+  market     String
+  rawData    Json
+  fetchedAt  DateTime      @default(now())
+
+  @@unique([sourceId, externalId])
+  @@index([market])
+}
+
+model Listing {
+  id            String            @id @default(cuid())
+  address       String
+  city          String
+  state         String            @default("TX")
+  zip           String?
+  lat           Float
+  lng           Float
+  market        String
+  propertyType  String
+  listingType   String
+  buildingSf    Float?
+  lotSizeAcres  Float?
+  priceAmount   Float?
+  priceUnit     String?
+  yearBuilt     Int?
+  brokerName    String?
+  brokerCompany String?
+  description   String?
+  imageUrl      String?
+  status        String            @default("active")
+  dedupeKey     String            @unique
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  variants      ListingVariant[]
+  favorites     FavoriteListing[]
+
+  @@index([market])
+  @@index([propertyType])
+  @@index([listingType])
+  @@index([lat, lng])
+  @@index([status])
+}
+
+model ListingVariant {
+  id          String        @id @default(cuid())
+  listingId   String
+  listing     Listing       @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  sourceId    String
+  source      ListingSource @relation(fields: [sourceId], references: [id])
+  externalId  String
+  sourceUrl   String?
+  priceAmount Float?
+  priceUnit   String?
+  buildingSf  Float?
+  description String?
+  brokerName  String?
+  brokerPhone String?
+  brokerEmail String?
+  imageUrl    String?
+  rawData     Json?
+  fetchedAt   DateTime      @default(now())
+
+  @@unique([sourceId, externalId])
+  @@index([listingId])
+}
+
+model SavedSearch {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  filters   Json
+  createdAt DateTime @default(now())
+}
+
+model FavoriteListing {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listingId String
+  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  notes     String?
+  createdAt DateTime @default(now())
+
+  @@unique([userId, listingId])
+}
