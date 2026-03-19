@@ -6,11 +6,13 @@ import { loopnetProvider } from "./providers/loopnet";
 import { crexiProvider } from "./providers/crexi";
 import { davisonvogelProvider } from "./providers/davisonvogel";
 import { youngerpartnersProvider } from "./providers/youngerpartners";
+import { alnProvider } from "./providers/aln";
 
 const ALL_PROVIDERS: ListingProvider[] = [
-  realtorProvider,
-  loopnetProvider,
   crexiProvider,
+  realtorProvider,
+  alnProvider,
+  loopnetProvider,
   davisonvogelProvider,
   youngerpartnersProvider,
 ];

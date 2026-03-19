@@ -1,0 +1,14 @@
+[Unit]
+Description=Atlas CRE Scraper Service
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/atlas-scraper
+EnvironmentFile=/etc/profile.d/atlas-scraper.sh
+ExecStart=/usr/bin/node dist/index.js
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
