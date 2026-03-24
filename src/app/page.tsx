@@ -21,6 +21,7 @@ function DashboardContent() {
 
   const [filters, setFilters] = useState<ListingFilters>({});
   const [filterPanelOpen, setFilterPanelOpen] = useState(true);
+  const [availableSources, setAvailableSources] = useState<{ slug: string; name: string }[]>([]);
   const [geojson, setGeojson] = useState<GeoJSON.FeatureCollection | null>(null);
   const [listings, setListings] = useState<ListingWithVariants[]>([]);
   const [selectedListing, setSelectedListing] = useState<ListingWithVariants | null>(null);
@@ -36,6 +37,13 @@ function DashboardContent() {
   useEffect(() => {
     if (status === "unauthenticated") router.push("/login");
   }, [status, router]);
+
+  // Load available sources
+  useEffect(() => {
+    if (status === "authenticated") {
+      fetch("/api/sources").then((r) => r.json()).then(setAvailableSources).catch(() => {});
+    }
+  }, [status]);
 
   // Sync filters from URL on mount (once)
   useEffect(() => {
@@ -82,6 +90,7 @@ function DashboardContent() {
     if (f.sfMax) params.set("sfMax", f.sfMax.toString());
     if (f.query) params.set("q", f.query);
     if (f.brokerCompany) params.set("brokerCompany", f.brokerCompany);
+    if (f.sources?.length) params.set("sources", f.sources.join(","));
 
     const bounds = boundsRef.current;
     if (bounds) {
@@ -213,6 +222,36 @@ function DashboardContent() {
 
         <ExportButton filters={filters} />
       </div>
+
+      {/* Source toggles */}
+      {availableSources.length > 0 && (
+        <div className="flex items-center gap-2 px-4 py-1.5 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 overflow-x-auto">
+          <span className="text-xs text-gray-400 shrink-0">Sources:</span>
+          {availableSources.map((src) => {
+            const active = !filters.sources || filters.sources.includes(src.slug);
+            return (
+              <button
+                key={src.slug}
+                onClick={() => {
+                  const all = availableSources.map((s) => s.slug);
+                  const current = filters.sources ?? all;
+                  const next = current.includes(src.slug)
+                    ? current.filter((s) => s !== src.slug)
+                    : [...current, src.slug];
+                  setFilters({ ...filters, sources: next.length === all.length ? undefined : next });
+                }}
+                className={`px-2.5 py-0.5 text-xs rounded-full border transition-colors shrink-0 ${
+                  active
+                    ? "bg-teal-600 border-teal-600 text-white"
+                    : "border-gray-300 dark:border-gray-600 text-gray-400 dark:text-gray-500"
+                }`}
+              >
+                {src.name}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       <FilterChips filters={filters} onChange={setFilters} />
 

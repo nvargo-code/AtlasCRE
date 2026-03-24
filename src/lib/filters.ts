@@ -52,6 +52,14 @@ export function buildListingWhere(filters: ListingFilters): Prisma.ListingWhereI
     ];
   }
 
+  if (filters.sources?.length) {
+    where.variants = {
+      some: {
+        source: { slug: { in: filters.sources } },
+      },
+    };
+  }
+
   if (filters.bounds) {
     where.lat = { gte: filters.bounds.south, lte: filters.bounds.north };
     where.lng = { gte: filters.bounds.west, lte: filters.bounds.east };
@@ -98,6 +106,9 @@ export function parseFiltersFromParams(params: URLSearchParams): ListingFilters 
 
   const query = params.get("q");
   if (query) filters.query = query;
+
+  const sources = params.get("sources");
+  if (sources) filters.sources = sources.split(",");
 
   const north = params.get("north");
   const south = params.get("south");

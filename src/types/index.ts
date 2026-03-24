@@ -27,6 +27,7 @@ export interface ListingFilters {
   status?: string;
   brokerCompany?: string;
   query?: string; // address/city/zip text search
+  sources?: string[]; // source slugs to filter by
   bounds?: {
     north: number;
     south: number;

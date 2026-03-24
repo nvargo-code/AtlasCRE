@@ -78,6 +78,7 @@ export default function AdminPage() {
   const [sources, setSources] = useState<ListingSource[]>([]);
   const [toggling, setToggling] = useState<string | null>(null);
   const [running, setRunning] = useState<string | null>(null);
+  const [clearing, setClearing] = useState(false);
   const [results, setResults] = useState<IngestionResult[]>([]);
 
   useEffect(() => {
@@ -105,6 +106,15 @@ export default function AdminPage() {
     });
     await loadSources();
     setToggling(null);
+  }
+
+  async function clearAllListings() {
+    if (!confirm("Delete ALL listings and variants from the database?")) return;
+    setClearing(true);
+    const res = await fetch("/api/admin/listings", { method: "DELETE" });
+    const data = await res.json();
+    alert(`Deleted ${data.deletedListings} listings and ${data.deletedVariants} variants.`);
+    setClearing(false);
   }
 
   async function triggerIngestion(provider?: string) {
@@ -141,13 +151,22 @@ export default function AdminPage() {
         <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-6 mb-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Data Sources</h2>
-            <button
-              onClick={() => triggerIngestion()}
-              disabled={running !== null}
-              className="py-2 px-4 bg-teal-600 hover:bg-teal-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
-            >
-              {running === "all" ? "Running all..." : "Run All Enabled"}
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={clearAllListings}
+                disabled={clearing || running !== null}
+                className="py-2 px-4 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
+              >
+                {clearing ? "Clearing..." : "Clear All Listings"}
+              </button>
+              <button
+                onClick={() => triggerIngestion()}
+                disabled={running !== null}
+                className="py-2 px-4 bg-teal-600 hover:bg-teal-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
+              >
+                {running === "all" ? "Running all..." : "Run All Enabled"}
+              </button>
+            </div>
           </div>
 
           <div className="space-y-3">
