@@ -144,7 +144,7 @@ function normalizeAsset(asset: CrexiAsset, market: "austin" | "dfw"): Normalized
     description: asset.description,
     imageUrl: asset.photos?.[0]?.url,
     sourceUrl: asset.slug ? `https://www.crexi.com/properties/${asset.slug}` : undefined,
-    rawData: asset as Record<string, unknown>,
+    rawData: asset as unknown as Record<string, unknown>,
   };
 }
 
