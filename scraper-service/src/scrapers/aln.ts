@@ -1,8 +1,64 @@
-import { Browser, Page } from "playwright";
+import { Browser, BrowserContext, Page } from "playwright";
 import { NormalizedListing } from "../types";
 
 const ALN_BASE = "https://www.austinluxurynetwork.com";
 const ALN_LOGIN = `${ALN_BASE}/login`;
+const SESSION_FILE = "/tmp/aln-session.json";
+const TWO_FA_CODE_FILE = "/tmp/aln-2fa-code.txt";
+export const TWO_FA_PENDING_FILE = "/tmp/aln-2fa-pending";
+
+// ── Session helpers ───────────────────────────────────────────────────────────
+
+async function saveSession(context: BrowserContext): Promise<void> {
+  try {
+    const fs = await import("fs");
+    const cookies = await context.cookies();
+    fs.writeFileSync(SESSION_FILE, JSON.stringify(cookies));
+    console.log("[aln] Session cookies saved");
+  } catch (err) {
+    console.warn("[aln] Could not save session:", err);
+  }
+}
+
+async function tryLoadSession(context: BrowserContext): Promise<boolean> {
+  try {
+    const fs = await import("fs");
+    if (!fs.existsSync(SESSION_FILE)) return false;
+    const raw = fs.readFileSync(SESSION_FILE, "utf8");
+    const cookies = JSON.parse(raw);
+    await context.addCookies(cookies);
+    console.log("[aln] Loaded saved session cookies");
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function isSessionValid(page: Page): Promise<boolean> {
+  try {
+    await page.goto(`${ALN_BASE}/listings`, { waitUntil: "domcontentloaded", timeout: 15000 });
+    const url = page.url();
+    const valid = !url.includes("/login") && !url.includes("/sign_in");
+    console.log(`[aln] Session valid: ${valid} (url: ${url})`);
+    return valid;
+  } catch {
+    return false;
+  }
+}
+
+// ── 2FA helpers ───────────────────────────────────────────────────────────────
+
+function setPending(fs: typeof import("fs"), pending: boolean): void {
+  try {
+    if (pending) {
+      fs.writeFileSync(TWO_FA_PENDING_FILE, "1");
+    } else {
+      try { fs.unlinkSync(TWO_FA_PENDING_FILE); } catch {}
+    }
+  } catch {}
+}
+
+// ── Login ─────────────────────────────────────────────────────────────────────
 
 async function login(page: Page): Promise<void> {
   const fs = await import("fs");
@@ -14,7 +70,7 @@ async function login(page: Page): Promise<void> {
   }
 
   await page.goto(ALN_LOGIN, { waitUntil: "networkidle", timeout: 30000 });
-  await page.waitForTimeout(3000);
+  await page.waitForTimeout(2000);
   console.log("[aln] Login page URL:", page.url());
 
   const usernameInput = await page.waitForSelector(
@@ -34,25 +90,30 @@ async function login(page: Page): Promise<void> {
     page.click("button[type='submit'], input[type='submit'], .login-button, [value='Login']"),
   ]);
 
-  console.log("[aln] Login complete, URL:", page.url());
+  console.log("[aln] Post-login URL:", page.url());
 
   if (page.url().includes("two_factor") || page.url().includes("2fa") || page.url().includes("verify")) {
-    console.log("[aln] 2FA required — write code to /tmp/aln-2fa-code.txt now");
-    try { fs.unlinkSync("/tmp/aln-2fa-code.txt"); } catch {}
+    console.log("[aln] 2FA required — waiting for code via HTTP or file...");
+
+    // Clear any stale code and signal that we're waiting
+    try { fs.unlinkSync(TWO_FA_CODE_FILE); } catch {}
+    setPending(fs, true);
 
     let code = "";
-    for (let i = 0; i < 60; i++) {
+    for (let i = 0; i < 120; i++) {
       try {
-        code = fs.readFileSync("/tmp/aln-2fa-code.txt", "utf8").trim();
+        code = fs.readFileSync(TWO_FA_CODE_FILE, "utf8").trim();
         if (code) break;
       } catch {}
       await page.waitForTimeout(1000);
     }
-    if (!code) throw new Error("2FA code not provided within 60 seconds");
+
+    setPending(fs, false);
+    if (!code) throw new Error("2FA code not provided within 120 seconds");
 
     console.log("[aln] Got 2FA code, submitting...");
     const codeInput = await page.waitForSelector(
-      "input[type='text']:not([name='authenticity_token']):not([type='hidden']), input[type='number']:not([type='hidden']), input[name*='code']:not([name='authenticity_token']), input[name*='otp']",
+      "input[type='text']:not([name='authenticity_token']), input[type='number'], input[name*='code']:not([name='authenticity_token']), input[name*='otp']",
       { timeout: 5000 }
     );
     await codeInput.fill(code);
@@ -60,10 +121,12 @@ async function login(page: Page): Promise<void> {
       page.waitForNavigation({ waitUntil: "domcontentloaded", timeout: 15000 }).catch(() => {}),
       page.click("button[type='submit'], input[type='submit']"),
     ]);
-    try { fs.unlinkSync("/tmp/aln-2fa-code.txt"); } catch {}
+    try { fs.unlinkSync(TWO_FA_CODE_FILE); } catch {}
     console.log("[aln] 2FA complete, URL:", page.url());
   }
 }
+
+// ── Geocoding ─────────────────────────────────────────────────────────────────
 
 async function geocodeAddress(address: string, city: string, state: string): Promise<{ lat: number; lng: number } | null> {
   try {
@@ -80,26 +143,17 @@ async function geocodeAddress(address: string, city: string, state: string): Pro
   }
 }
 
+// ── Page scraper ──────────────────────────────────────────────────────────────
+
 async function scrapeListingsPage(page: Page): Promise<NormalizedListing[]> {
   const listings: NormalizedListing[] = [];
-
-  // Wait for some listing content to load
   await page.waitForTimeout(3000);
-
-  // Capture the current URL and page content to understand the structure
   const url = page.url();
   console.log("[aln] Scraping page:", url);
 
-  // Try common listing card selectors — adjust these once you've inspected the
-  // actual post-login HTML structure at austinluxurynetwork.com/listings
   const cardSelector = [
-    ".listing-card",
-    ".property-card",
-    ".listing-item",
-    ".property-item",
-    "[class*='listing']",
-    "[class*='property']",
-    "article",
+    ".listing-card", ".property-card", ".listing-item", ".property-item",
+    "[class*='listing']", "[class*='property']", "article",
   ].join(", ");
 
   const cards = await page.$$(cardSelector);
@@ -123,12 +177,10 @@ async function scrapeListingsPage(page: Page): Promise<NormalizedListing[]> {
       const img = await getAttr("img", "src");
       const link = await getAttr("a", "href");
 
-      // Parse address — ALN is Austin-only so default city to Austin
       const parts = addressText.split(",").map((s: string) => s.trim());
       const address = parts[0] ?? addressText;
       const city = parts[1] ?? "Austin";
 
-      // Parse price
       let priceAmount: number | undefined;
       if (priceText) {
         const cleaned = priceText.replace(/[^0-9.]/g, "");
@@ -140,14 +192,12 @@ async function scrapeListingsPage(page: Page): Promise<NormalizedListing[]> {
         }
       }
 
-      // Parse sqft
       let buildingSf: number | undefined;
       if (sqftText) {
         const match = sqftText.match(/([\d,]+)/);
         if (match) buildingSf = parseInt(match[1].replace(/,/g, ""));
       }
 
-      // Geocode
       const geo = await geocodeAddress(address, city, "TX");
       if (!geo) continue;
       await new Promise((r) => setTimeout(r, 250));
@@ -182,6 +232,8 @@ async function scrapeListingsPage(page: Page): Promise<NormalizedListing[]> {
   return listings;
 }
 
+// ── Main export ───────────────────────────────────────────────────────────────
+
 export async function scrapeALN(browser: Browser): Promise<NormalizedListing[]> {
   const context = await browser.newContext({
     userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
@@ -192,15 +244,29 @@ export async function scrapeALN(browser: Browser): Promise<NormalizedListing[]> 
   const listings: NormalizedListing[] = [];
 
   try {
-    await login(page);
+    // Try to reuse a saved session first
+    const sessionLoaded = await tryLoadSession(context);
+    let needsLogin = true;
 
-    // Navigate to listings — try common paths after login
-    // If none of these are right, check the actual URL after manual login
+    if (sessionLoaded) {
+      needsLogin = !(await isSessionValid(page));
+      if (!needsLogin) {
+        console.log("[aln] Reusing saved session — no login needed");
+      } else {
+        console.log("[aln] Saved session expired — logging in");
+      }
+    }
+
+    if (needsLogin) {
+      await login(page);
+      await saveSession(context); // persist for next run
+    }
+
+    // Navigate to listings
     const listingsPaths = ["/listings", "/properties", "/search", "/members/listings", "/dashboard"];
     let navigated = false;
-
     for (const path of listingsPaths) {
-      await page.goto(`${ALN_BASE}${path}`, { waitUntil: "domcontentloaded", timeout: 15_000 });
+      await page.goto(`${ALN_BASE}${path}`, { waitUntil: "domcontentloaded", timeout: 15000 });
       if (!page.url().includes("/login")) {
         navigated = true;
         console.log(`[aln] Found listings at: ${page.url()}`);
@@ -209,22 +275,19 @@ export async function scrapeALN(browser: Browser): Promise<NormalizedListing[]> 
     }
 
     if (!navigated) {
-      console.warn("[aln] Could not find listings page — check ALN_LISTINGS_PATH env var");
-      // Fall back to whatever page landed on after login
+      console.warn("[aln] Could not find listings page");
     }
 
-    // Scrape current page
     const pageListings = await scrapeListingsPage(page);
     listings.push(...pageListings);
 
-    // Try paginating
     let pageNum = 2;
     while (pageNum <= 10) {
       const nextBtn = await page.$("[aria-label='Next'], .next, [rel='next'], a[href*='page=" + pageNum + "']");
       if (!nextBtn) break;
 
       await Promise.all([
-        page.waitForNavigation({ waitUntil: "domcontentloaded", timeout: 15_000 }).catch(() => {}),
+        page.waitForNavigation({ waitUntil: "domcontentloaded", timeout: 15000 }).catch(() => {}),
         nextBtn.click(),
       ]);
       await page.waitForTimeout(2000);

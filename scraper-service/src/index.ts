@@ -2,7 +2,8 @@ import "dotenv/config";
 import express, { Request, Response, NextFunction } from "express";
 import { chromium } from "playwright";
 import { scrapeLoopNet } from "./scrapers/loopnet";
-import { scrapeALN } from "./scrapers/aln";
+import { scrapeALN, TWO_FA_PENDING_FILE } from "./scrapers/aln";
+import fs from "fs";
 
 const app = express();
 app.use(express.json());
@@ -67,6 +68,26 @@ app.post("/scrape/aln", requireAuth, async (_req: Request, res: Response) => {
   } finally {
     await browser.close();
   }
+});
+
+// ── ALN 2FA endpoints ─────────────────────────────────────────────────────────
+
+// Returns whether the ALN scraper is currently waiting for a 2FA code
+app.get("/2fa/aln/pending", requireAuth, (_req: Request, res: Response) => {
+  const pending = fs.existsSync(TWO_FA_PENDING_FILE);
+  res.json({ pending });
+});
+
+// Accepts a 2FA code from the admin UI and writes it to the polling file
+app.post("/2fa/aln", requireAuth, (req: Request, res: Response) => {
+  const code = req.body?.code as string | undefined;
+  if (!code) {
+    res.status(400).json({ error: "code is required" });
+    return;
+  }
+  fs.writeFileSync("/tmp/aln-2fa-code.txt", code.trim());
+  console.log("[aln] 2FA code received via HTTP");
+  res.json({ ok: true });
 });
 
 // ── Start server ──────────────────────────────────────────────────────────────

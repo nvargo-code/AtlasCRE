@@ -2,7 +2,7 @@
 
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { Header } from "@/components/Header";
 
 interface ListingSource {
@@ -80,6 +80,9 @@ export default function AdminPage() {
   const [running, setRunning] = useState<string | null>(null);
   const [clearing, setClearing] = useState(false);
   const [results, setResults] = useState<IngestionResult[]>([]);
+  const [alnTwoFaPending, setAlnTwoFaPending] = useState(false);
+  const [alnTwoFaCode, setAlnTwoFaCode] = useState("");
+  const twoFaPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     if (status === "unauthenticated") router.push("/login");
@@ -106,6 +109,35 @@ export default function AdminPage() {
     });
     await loadSources();
     setToggling(null);
+  }
+
+  // Poll for ALN 2FA when ALN is running
+  useEffect(() => {
+    if (running === "aln" || running === "all") {
+      twoFaPollRef.current = setInterval(async () => {
+        const res = await fetch("/api/aln/2fa").catch(() => null);
+        if (res?.ok) {
+          const data = await res.json();
+          setAlnTwoFaPending(data.pending ?? false);
+        }
+      }, 2000);
+    } else {
+      if (twoFaPollRef.current) clearInterval(twoFaPollRef.current);
+      setAlnTwoFaPending(false);
+      setAlnTwoFaCode("");
+    }
+    return () => { if (twoFaPollRef.current) clearInterval(twoFaPollRef.current); };
+  }, [running]);
+
+  async function submitTwoFaCode() {
+    if (!alnTwoFaCode.trim()) return;
+    await fetch("/api/aln/2fa", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code: alnTwoFaCode.trim() }),
+    });
+    setAlnTwoFaCode("");
+    setAlnTwoFaPending(false);
   }
 
   async function clearAllListings() {
@@ -212,6 +244,32 @@ export default function AdminPage() {
                 </button>
               </div>
             ))}
+
+            {/* ALN 2FA prompt */}
+            {alnTwoFaPending && (
+              <div className="flex items-center gap-3 p-4 border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-amber-800 dark:text-amber-300 mb-1">
+                    ALN 2FA required — enter the SMS code you received
+                  </p>
+                  <input
+                    type="text"
+                    value={alnTwoFaCode}
+                    onChange={(e) => setAlnTwoFaCode(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && submitTwoFaCode()}
+                    placeholder="6-digit code"
+                    className="w-40 px-3 py-1.5 text-sm border border-amber-300 dark:border-amber-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
+                    autoFocus
+                  />
+                </div>
+                <button
+                  onClick={submitTwoFaCode}
+                  className="py-1.5 px-4 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium rounded-lg transition-colors"
+                >
+                  Submit
+                </button>
+              </div>
+            )}
 
             {sources.length === 0 && (
               <p className="text-sm text-gray-400 text-center py-4">Loading sources...</p>
