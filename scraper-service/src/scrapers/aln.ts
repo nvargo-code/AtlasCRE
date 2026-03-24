@@ -5,36 +5,64 @@ const ALN_BASE = "https://www.austinluxurynetwork.com";
 const ALN_LOGIN = `${ALN_BASE}/login`;
 
 async function login(page: Page): Promise<void> {
-  const email = process.env.ALN_USERNAME;
+  const fs = await import("fs");
+  const username = process.env.ALN_USERNAME;
   const password = process.env.ALN_PASSWORD;
 
-  if (!email || !password) {
+  if (!username || !password) {
     throw new Error("ALN_USERNAME and ALN_PASSWORD env vars are required");
   }
 
-  await page.goto(ALN_LOGIN, { waitUntil: "domcontentloaded", timeout: 30_000 });
-  await page.waitForTimeout(1500);
+  await page.goto(ALN_LOGIN, { waitUntil: "networkidle", timeout: 30000 });
+  await page.waitForTimeout(3000);
+  console.log("[aln] Login page URL:", page.url());
 
-  // Fill credentials
-  const emailInput = await page.waitForSelector(
-    "input[type='email'], input[name='email'], input[id='email'], input[placeholder*='email' i]",
-    { timeout: 10_000 }
+  const usernameInput = await page.waitForSelector(
+    "input[type='text'], input[name='username'], input[name='user'], input[name='login'], input[placeholder*='user' i], input[placeholder*='name' i], input[type='email']",
+    { timeout: 10000 }
   );
-  await emailInput.fill(email);
+  await usernameInput.fill(username);
 
   const passwordInput = await page.waitForSelector(
     "input[type='password'], input[name='password'], input[id='password']",
-    { timeout: 5_000 }
+    { timeout: 5000 }
   );
   await passwordInput.fill(password);
 
-  // Submit
   await Promise.all([
-    page.waitForNavigation({ waitUntil: "domcontentloaded", timeout: 30_000 }),
+    page.waitForNavigation({ waitUntil: "domcontentloaded", timeout: 30000 }).catch(() => {}),
     page.click("button[type='submit'], input[type='submit'], .login-button, [value='Login']"),
   ]);
 
-  console.log("[aln] Login complete");
+  console.log("[aln] Login complete, URL:", page.url());
+
+  if (page.url().includes("two_factor") || page.url().includes("2fa") || page.url().includes("verify")) {
+    console.log("[aln] 2FA required — write code to /tmp/aln-2fa-code.txt now");
+    try { fs.unlinkSync("/tmp/aln-2fa-code.txt"); } catch {}
+
+    let code = "";
+    for (let i = 0; i < 60; i++) {
+      try {
+        code = fs.readFileSync("/tmp/aln-2fa-code.txt", "utf8").trim();
+        if (code) break;
+      } catch {}
+      await page.waitForTimeout(1000);
+    }
+    if (!code) throw new Error("2FA code not provided within 60 seconds");
+
+    console.log("[aln] Got 2FA code, submitting...");
+    const codeInput = await page.waitForSelector(
+      "input[type='text']:not([name='authenticity_token']):not([type='hidden']), input[type='number']:not([type='hidden']), input[name*='code']:not([name='authenticity_token']), input[name*='otp']",
+      { timeout: 5000 }
+    );
+    await codeInput.fill(code);
+    await Promise.all([
+      page.waitForNavigation({ waitUntil: "domcontentloaded", timeout: 15000 }).catch(() => {}),
+      page.click("button[type='submit'], input[type='submit']"),
+    ]);
+    try { fs.unlinkSync("/tmp/aln-2fa-code.txt"); } catch {}
+    console.log("[aln] 2FA complete, URL:", page.url());
+  }
 }
 
 async function geocodeAddress(address: string, city: string, state: string): Promise<{ lat: number; lng: number } | null> {
@@ -42,7 +70,7 @@ async function geocodeAddress(address: string, city: string, state: string): Pro
     const q = encodeURIComponent(`${address}, ${city}, ${state}`);
     const res = await fetch(
       `https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=1`,
-      { headers: { "User-Agent": "AtlasCRE/1.0 (internal)" } }
+      { headers: { "User-Agent": "AtlasCRE/1.0 (internal)" }, signal: AbortSignal.timeout(5000) }
     );
     const data = await res.json() as Array<{ lat: string; lon: string }>;
     if (!data.length) return null;

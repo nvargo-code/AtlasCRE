@@ -25,20 +25,31 @@ async function ensureLoggedIn(page: Page): Promise<void> {
   if (isLoggedIn) return;
 
   // Navigate to login
-  await page.goto("https://www.loopnet.com/login/", { waitUntil: "domcontentloaded" });
-  await page.waitForTimeout(1500);
+  await page.goto("https://www.loopnet.com/login/", { waitUntil: "networkidle", timeout: 30_000 });
+  await page.waitForTimeout(3000);
+  console.log("[loopnet] Login page URL:", page.url());
 
-  // Fill login form
-  const emailInput = await page.waitForSelector("input[type='email'], input[name='email'], #email", { timeout: 10_000 });
+  // Take screenshot for debugging
+  await page.screenshot({ path: "/tmp/loopnet-login.png" });
+  console.log("[loopnet] Screenshot saved to /tmp/loopnet-login.png");
+
+  // Fill login form — try broad selectors to handle LoopNet's varying form structure
+  const emailInput = await page.waitForSelector(
+    "input[type='email'], input[name='email'], input[name='Username'], input[name='username'], input[autocomplete='email'], input[autocomplete='username'], input[type='text']",
+    { timeout: 15_000 }
+  );
   await emailInput.fill(email);
 
-  const passwordInput = await page.waitForSelector("input[type='password'], input[name='password'], #password", { timeout: 5_000 });
+  const passwordInput = await page.waitForSelector(
+    "input[type='password'], input[name='password'], input[name='Password'], input[autocomplete='current-password']",
+    { timeout: 5_000 }
+  );
   await passwordInput.fill(password);
 
   // Submit
   await Promise.all([
-    page.waitForNavigation({ waitUntil: "domcontentloaded", timeout: 30_000 }),
-    page.click("button[type='submit'], .login-button, [data-testid='login-submit']"),
+    page.waitForNavigation({ waitUntil: "domcontentloaded", timeout: 30_000 }).catch(() => {}),
+    page.click("button[type='submit'], input[type='submit'], .login-button, [data-testid='login-submit']"),
   ]);
 
   console.log("[loopnet] Login complete");

@@ -34,18 +34,19 @@ async function main() {
 
   // Create listing sources
   const sources = [
-    { slug: "realtor", name: "Realtor.com" },
-    { slug: "loopnet", name: "LoopNet" },
-    { slug: "crexi", name: "Crexi" },
-    { slug: "davisonvogel", name: "Davison & Vogel" },
-    { slug: "youngerpartners", name: "Younger Partners" },
+    { slug: "crexi",           name: "Crexi",                enabled: true  },
+    { slug: "realtor",         name: "Realtor.com",           enabled: true  },
+    { slug: "aln",             name: "Austin Luxury Network", enabled: true  },
+    { slug: "loopnet",         name: "LoopNet",               enabled: false },
+    { slug: "davisonvogel",    name: "Davison & Vogel",       enabled: false },
+    { slug: "youngerpartners", name: "Younger Partners",      enabled: false },
   ];
 
   for (const s of sources) {
     await prisma.listingSource.upsert({
       where: { slug: s.slug },
       create: s,
-      update: {},
+      update: { enabled: s.enabled },
     });
   }
   console.log("Created", sources.length, "listing sources");

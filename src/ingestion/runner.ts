@@ -53,12 +53,17 @@ export async function runIngestion(options: IngestionOptions): Promise<Ingestion
   const allListings: NormalizedListing[] = [];
 
   for (const provider of providers) {
-    // Ensure source exists in DB
-    await prisma.listingSource.upsert({
+    // Ensure source exists in DB and check enabled flag
+    const source = await prisma.listingSource.upsert({
       where: { slug: provider.slug },
       create: { name: provider.name, slug: provider.slug },
       update: {},
     });
+
+    if (!source.enabled) {
+      console.log(`[runner] Skipping disabled provider: ${provider.slug}`);
+      continue;
+    }
 
     for (const market of markets) {
       try {
