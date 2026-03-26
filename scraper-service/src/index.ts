@@ -87,7 +87,8 @@ app.post("/scrape/aln/start", requireAuth, (_req: Request, res: Response) => {
   const jobId = `aln-${Date.now()}`;
   jobs.set(jobId, { id: jobId, status: "running" });
 
-  chromium.launch({ headless: true }).then(browser =>
+  const launchArgs = ["--no-sandbox", "--disable-dev-shm-usage", "--disable-gpu"];
+  chromium.launch({ headless: true, args: launchArgs }).then(browser =>
     scrapeALN(browser)
       .then(listings => {
         jobs.set(jobId, { id: jobId, status: "complete", listings });
