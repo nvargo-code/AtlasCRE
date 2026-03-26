@@ -298,7 +298,7 @@ export async function scrapeALN(browser: Browser): Promise<NormalizedListing[]> 
       pageNum++;
     }
   } finally {
-    await context.close();
+    try { await context.close(); } catch {}
   }
 
   console.log(`[aln] Total listings scraped: ${listings.length}`);
