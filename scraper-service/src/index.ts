@@ -94,8 +94,16 @@ app.post("/scrape/aln/start", requireAuth, (_req: Request, res: Response) => {
         console.log(`[aln] Job ${jobId} complete: ${listings.length} listings`);
       })
       .catch(err => {
-        jobs.set(jobId, { id: jobId, status: "error", error: String(err) });
-        console.error(`[aln] Job ${jobId} error:`, err);
+        // Try to recover partial results saved during scrape
+        let partial: NormalizedListing[] = [];
+        try { partial = JSON.parse(fs.readFileSync("/tmp/aln-listings.json", "utf8")); } catch {}
+        if (partial.length > 0) {
+          jobs.set(jobId, { id: jobId, status: "complete", listings: partial });
+          console.log(`[aln] Job ${jobId} recovered ${partial.length} partial listings after error: ${err}`);
+        } else {
+          jobs.set(jobId, { id: jobId, status: "error", error: String(err) });
+          console.error(`[aln] Job ${jobId} error:`, err);
+        }
       })
       .finally(() => browser.close())
   ).catch(err => {

@@ -6,6 +6,7 @@ const ALN_LOGIN = `${ALN_BASE}/login`;
 const SESSION_FILE = "/tmp/aln-session.json";
 const TWO_FA_CODE_FILE = "/tmp/aln-2fa-code.txt";
 export const TWO_FA_PENDING_FILE = "/tmp/aln-2fa-pending";
+const PARTIAL_RESULTS_FILE = "/tmp/aln-listings.json";
 
 // ── Session helpers ───────────────────────────────────────────────────────────
 
@@ -278,8 +279,14 @@ export async function scrapeALN(browser: Browser): Promise<NormalizedListing[]> 
       console.warn("[aln] Could not find listings page");
     }
 
+    const fs = await import("fs");
+    const savePartial = () => {
+      try { fs.writeFileSync(PARTIAL_RESULTS_FILE, JSON.stringify(listings)); } catch {}
+    };
+
     const pageListings = await scrapeListingsPage(page);
     listings.push(...pageListings);
+    savePartial();
 
     let pageNum = 2;
     while (pageNum <= 10) {
@@ -295,6 +302,7 @@ export async function scrapeALN(browser: Browser): Promise<NormalizedListing[]> 
       const more = await scrapeListingsPage(page);
       if (more.length === 0) break;
       listings.push(...more);
+      savePartial();
       pageNum++;
     }
   } finally {
