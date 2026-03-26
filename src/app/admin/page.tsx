@@ -82,7 +82,9 @@ export default function AdminPage() {
   const [results, setResults] = useState<IngestionResult[]>([]);
   const [alnTwoFaPending, setAlnTwoFaPending] = useState(false);
   const [alnTwoFaCode, setAlnTwoFaCode] = useState("");
+  const [alnJobId, setAlnJobId] = useState<string | null>(null);
   const twoFaPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const alnJobPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     if (status === "unauthenticated") router.push("/login");
@@ -113,7 +115,7 @@ export default function AdminPage() {
 
   // Poll for ALN 2FA when ALN is running
   useEffect(() => {
-    if (running === "aln" || running === "all") {
+    if (running === "aln" || running === "all" || alnJobId) {
       twoFaPollRef.current = setInterval(async () => {
         const res = await fetch("/api/aln/2fa").catch(() => null);
         if (res?.ok) {
@@ -127,7 +129,52 @@ export default function AdminPage() {
       setAlnTwoFaCode("");
     }
     return () => { if (twoFaPollRef.current) clearInterval(twoFaPollRef.current); };
-  }, [running]);
+  }, [running, alnJobId]);
+
+  // Poll ALN async job status until complete or error
+  useEffect(() => {
+    if (!alnJobId) {
+      if (alnJobPollRef.current) clearInterval(alnJobPollRef.current);
+      return;
+    }
+
+    alnJobPollRef.current = setInterval(async () => {
+      const res = await fetch(`/api/aln/job/${alnJobId}`).catch(() => null);
+      if (!res?.ok) return;
+      const data = await res.json();
+
+      if (data.status === "complete") {
+        if (alnJobPollRef.current) clearInterval(alnJobPollRef.current);
+        // Fetch and upsert results
+        const finishRes = await fetch("/api/aln/finish", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ jobId: alnJobId }),
+        }).catch(() => null);
+        setAlnJobId(null);
+        setRunning(null);
+        if (finishRes?.ok) {
+          const result = await finishRes.json();
+          setResults(prev => [result, ...prev]);
+        }
+        await loadSources();
+      } else if (data.status === "error") {
+        if (alnJobPollRef.current) clearInterval(alnJobPollRef.current);
+        setAlnJobId(null);
+        setRunning(null);
+        setResults(prev => [{
+          providersRun: 1,
+          listingsFetched: 0,
+          listingsUpserted: 0,
+          variantsCreated: 0,
+          errors: [data.error ?? "ALN scrape failed"],
+        }, ...prev]);
+        await loadSources();
+      }
+    }, 5000);
+
+    return () => { if (alnJobPollRef.current) clearInterval(alnJobPollRef.current); };
+  }, [alnJobId, loadSources]);
 
   async function submitTwoFaCode() {
     if (!alnTwoFaCode.trim()) return;
@@ -150,6 +197,19 @@ export default function AdminPage() {
   }
 
   async function triggerIngestion(provider?: string) {
+    // ALN uses async job flow to avoid Vercel timeout
+    if (provider === "aln") {
+      setRunning("aln");
+      const res = await fetch("/api/aln/start", { method: "POST" }).catch(() => null);
+      if (res?.ok) {
+        const data = await res.json();
+        setAlnJobId(data.jobId);
+      } else {
+        setRunning(null);
+      }
+      return;
+    }
+
     setRunning(provider || "all");
     try {
       const res = await fetch("/api/ingest", {
@@ -186,14 +246,14 @@ export default function AdminPage() {
             <div className="flex gap-2">
               <button
                 onClick={clearAllListings}
-                disabled={clearing || running !== null}
+                disabled={clearing || running !== null || alnJobId !== null}
                 className="py-2 px-4 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
               >
                 {clearing ? "Clearing..." : "Clear All Listings"}
               </button>
               <button
                 onClick={() => triggerIngestion()}
-                disabled={running !== null}
+                disabled={running !== null || alnJobId !== null}
                 className="py-2 px-4 bg-teal-600 hover:bg-teal-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
               >
                 {running === "all" ? "Running all..." : "Run All Enabled"}
@@ -211,7 +271,7 @@ export default function AdminPage() {
                 <Toggle
                   enabled={source.enabled}
                   onChange={(val) => toggleSource(source.slug, val)}
-                  disabled={toggling === source.slug || running !== null}
+                  disabled={toggling === source.slug || running !== null || alnJobId !== null}
                 />
 
                 {/* Name + slug */}
@@ -237,10 +297,10 @@ export default function AdminPage() {
                 {/* Run button */}
                 <button
                   onClick={() => triggerIngestion(source.slug)}
-                  disabled={!source.enabled || running !== null}
+                  disabled={!source.enabled || running !== null || alnJobId !== null}
                   className="py-1.5 px-3 text-xs border border-gray-300 dark:border-gray-700 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                 >
-                  {running === source.slug ? "Running..." : "Run"}
+                  {running === source.slug || (source.slug === "aln" && alnJobId !== null) ? "Running..." : "Run"}
                 </button>
               </div>
             ))}

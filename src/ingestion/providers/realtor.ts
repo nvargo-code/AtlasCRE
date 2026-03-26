@@ -1,17 +1,15 @@
 import { ListingProvider, NormalizedListing } from "../types";
 
 /**
- * Realtor.com commercial listings adapter.
- * Uses the unofficial search API that powers their website.
- * Filters for commercial property types by market bounding box.
+ * Realtor.com listings adapter.
+ * Uses the GraphQL API that powers their website search.
+ * Returns all property types (residential + commercial).
  */
 
 const MARKET_PARAMS: Record<string, { lat: number; lon: number; radius: number }> = {
   austin: { lat: 30.267, lon: -97.743, radius: 30 },
   dfw:    { lat: 32.779, lon: -96.808, radius: 40 },
 };
-
-const COMMERCIAL_PROP_TYPES = "land,multi_family,commercial";
 
 interface RealtorProperty {
   property_id?: string;
@@ -52,25 +50,43 @@ async function fetchRealtorPage(
 ): Promise<RealtorProperty[]> {
   const params = MARKET_PARAMS[market];
 
-  const url = new URL(
-    "https://www.realtor.com/api/v1/hulk_main_srp/calls/web/fetch_consumer_offmarket_properties/SearchSrpPage/glide/True"
-  );
-  url.searchParams.set("prop_type", COMMERCIAL_PROP_TYPES);
-  url.searchParams.set("limit", "200");
-  url.searchParams.set("offset", String(offset));
-  url.searchParams.set("geo_lat", String(params.lat));
-  url.searchParams.set("geo_lon", String(params.lon));
-  url.searchParams.set("radius", String(params.radius));
-  url.searchParams.set("pgsz", "200");
-  url.searchParams.set("schema", "legacyapp");
-  url.searchParams.set("sort", "relevance");
+  const body = {
+    operationName: "ConsumerSearchMainQuery",
+    variables: {
+      query: {
+        primary: true,
+        status: ["for_sale", "ready_to_build"],
+        geo_lat: params.lat,
+        geo_lon: params.lon,
+        radius: `${params.radius}mi`,
+      },
+      limit: 200,
+      offset,
+      sort_type: "relevant",
+    },
+    query: `query ConsumerSearchMainQuery($query: SearchHomeInput, $limit: Int, $offset: Int, $sort_type: String) {
+      home_search(query: $query, limit: $limit, offset: $offset, sort_type: $sort_type) {
+        results {
+          property_id listing_id prop_type
+          address { line city state_code postal_code lat lon }
+          price building_size { size units } lot_size { size units }
+          year_built description rdc_web_url
+          agents { name office { name } phones { number type } email }
+          photos { href }
+        }
+      }
+    }`,
+  };
 
-  const res = await fetch(url.toString(), {
+  const res = await fetch("https://www.realtor.com/api/v1/graphql", {
+    method: "POST",
     headers: {
+      "Content-Type": "application/json",
       "Accept": "application/json",
       "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
       "Referer": "https://www.realtor.com/",
     },
+    body: JSON.stringify(body),
     signal: AbortSignal.timeout(30_000),
   });
 
@@ -79,11 +95,7 @@ async function fetchRealtorPage(
   }
 
   const data: RealtorResponse = await res.json();
-  return (
-    data.properties ??
-    data.data?.home_search?.results ??
-    []
-  );
+  return data.data?.home_search?.results ?? [];
 }
 
 function normalizeProperty(
@@ -107,7 +119,7 @@ function normalizeProperty(
     ?? agent?.phones?.[0]?.number;
 
   const propType = prop.prop_type ?? "Commercial";
-  const listingType = "sale"; // Realtor.com hulk endpoint is sale/for-sale focused
+  const listingType = "sale";
 
   const buildingSf = prop.building_size?.units === "sqft"
     ? prop.building_size.size

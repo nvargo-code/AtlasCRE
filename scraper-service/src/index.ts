@@ -3,10 +3,20 @@ import express, { Request, Response, NextFunction } from "express";
 import { chromium } from "playwright";
 import { scrapeLoopNet } from "./scrapers/loopnet";
 import { scrapeALN, TWO_FA_PENDING_FILE } from "./scrapers/aln";
+import { NormalizedListing } from "./types";
 import fs from "fs";
 
 const app = express();
 app.use(express.json());
+
+// ── Job storage ───────────────────────────────────────────────────────────────
+interface ScraperJob {
+  id: string;
+  status: "running" | "complete" | "error";
+  listings?: NormalizedListing[];
+  error?: string;
+}
+const jobs = new Map<string, ScraperJob>();
 
 const PORT = process.env.PORT ?? 3333;
 const SCRAPER_SECRET = process.env.SCRAPER_SECRET ?? "";
@@ -68,6 +78,51 @@ app.post("/scrape/aln", requireAuth, async (_req: Request, res: Response) => {
   } finally {
     await browser.close();
   }
+});
+
+// ── ALN async job routes ──────────────────────────────────────────────────────
+
+// POST /scrape/aln/start — fire and forget, returns jobId immediately
+app.post("/scrape/aln/start", requireAuth, (_req: Request, res: Response) => {
+  const jobId = `aln-${Date.now()}`;
+  jobs.set(jobId, { id: jobId, status: "running" });
+
+  chromium.launch({ headless: true }).then(browser =>
+    scrapeALN(browser)
+      .then(listings => {
+        jobs.set(jobId, { id: jobId, status: "complete", listings });
+        console.log(`[aln] Job ${jobId} complete: ${listings.length} listings`);
+      })
+      .catch(err => {
+        jobs.set(jobId, { id: jobId, status: "error", error: String(err) });
+        console.error(`[aln] Job ${jobId} error:`, err);
+      })
+      .finally(() => browser.close())
+  ).catch(err => {
+    jobs.set(jobId, { id: jobId, status: "error", error: String(err) });
+  });
+
+  console.log(`[aln] Started async job ${jobId}`);
+  res.json({ jobId });
+});
+
+// GET /scrape/aln/job/:jobId — poll job status
+app.get("/scrape/aln/job/:jobId", requireAuth, (req: Request, res: Response) => {
+  const job = jobs.get(req.params.jobId);
+  if (!job) { res.status(404).json({ error: "Job not found" }); return; }
+  // Don't include listings in status poll (too large) — only on complete fetch
+  const { listings, ...meta } = job;
+  res.json({ ...meta, listingCount: listings?.length });
+});
+
+// GET /scrape/aln/job/:jobId/results — fetch completed listings
+app.get("/scrape/aln/job/:jobId/results", requireAuth, (req: Request, res: Response) => {
+  const job = jobs.get(req.params.jobId);
+  if (!job) { res.status(404).json({ error: "Job not found" }); return; }
+  if (job.status !== "complete") { res.status(409).json({ error: "Job not complete", status: job.status }); return; }
+  res.json(job.listings ?? []);
+  // Clean up after fetching results
+  jobs.delete(req.params.jobId);
 });
 
 // ── ALN 2FA endpoints ─────────────────────────────────────────────────────────

@@ -35,7 +35,7 @@ export const alnProvider: ListingProvider = {
         "Authorization": `Bearer ${process.env.SCRAPER_SECRET ?? ""}`,
       },
       body: JSON.stringify({ market }),
-      signal: AbortSignal.timeout(120_000),
+      signal: AbortSignal.timeout(270_000),
     });
 
     if (!res.ok) {
