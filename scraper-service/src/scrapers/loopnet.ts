@@ -189,10 +189,21 @@ export async function scrapeLoopNet(
   browser: Browser,
   market: "austin" | "dfw"
 ): Promise<NormalizedListing[]> {
-  const context = await browser.newContext({
+  const proxyUrl = process.env.LOOPNET_PROXY_URL;
+  const contextOptions: Parameters<Browser["newContext"]>[0] = {
     userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
     viewport: { width: 1280, height: 800 },
-  });
+  };
+  if (proxyUrl) {
+    const u = new URL(proxyUrl);
+    contextOptions.proxy = {
+      server: `${u.protocol}//${u.hostname}:${u.port}`,
+      username: u.username,
+      password: u.password,
+    };
+    console.log(`[loopnet] Using proxy: ${u.hostname}:${u.port}`);
+  }
+  const context = await browser.newContext(contextOptions);
 
   const page = await context.newPage();
   const listings: NormalizedListing[] = [];
