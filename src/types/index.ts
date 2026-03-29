@@ -1,5 +1,7 @@
 export type Market = "austin" | "dfw";
 
+export type SearchMode = "commercial" | "residential";
+
 export type PropertyType =
   | "Office"
   | "Retail"
@@ -10,12 +12,22 @@ export type PropertyType =
   | "Hospitality"
   | "Special Purpose";
 
+export type ResidentialPropertySubType =
+  | "Single Family"
+  | "Condo"
+  | "Townhouse"
+  | "Multi-Family"
+  | "Mobile/Manufactured"
+  | "Land"
+  | "Farm/Ranch";
+
 export type ListingType = "Sale" | "Lease" | "Sublease";
 
 export type PriceUnit = "total" | "per_sf" | "per_sf_yr" | "per_sf_mo";
 
 export interface ListingFilters {
   market?: Market;
+  searchMode?: SearchMode;
   propertyType?: PropertyType[];
   listingType?: ListingType[];
   priceMin?: number;
@@ -34,6 +46,12 @@ export interface ListingFilters {
     east: number;
     west: number;
   };
+  // Residential filters
+  bedsMin?: number;
+  bedsMax?: number;
+  bathsMin?: number;
+  bathsMax?: number;
+  propSubType?: ResidentialPropertySubType[];
 }
 
 export interface ListingWithVariants {
@@ -57,6 +75,12 @@ export interface ListingWithVariants {
   description: string | null;
   imageUrl: string | null;
   status: string;
+  beds: number | null;
+  baths: number | null;
+  garageSpaces: number | null;
+  stories: number | null;
+  propSubType: string | null;
+  searchMode: string;
   createdAt: string;
   updatedAt: string;
   variants: ListingVariantData[];
@@ -96,5 +120,9 @@ export interface GeoJSONFeature {
     priceUnit: string | null;
     buildingSf: number | null;
     status: string;
+    beds: number | null;
+    baths: number | null;
+    propSubType: string | null;
+    searchMode: string;
   };
 }

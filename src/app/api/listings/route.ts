@@ -36,6 +36,10 @@ export async function GET(req: NextRequest) {
         priceUnit: true,
         buildingSf: true,
         status: true,
+        beds: true,
+        baths: true,
+        propSubType: true,
+        searchMode: true,
       },
       take: 2000,
     });
@@ -58,6 +62,10 @@ export async function GET(req: NextRequest) {
           priceUnit: l.priceUnit,
           buildingSf: l.buildingSf,
           status: l.status,
+          beds: l.beds,
+          baths: l.baths,
+          propSubType: l.propSubType,
+          searchMode: l.searchMode,
         },
       })),
     };

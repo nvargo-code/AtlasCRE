@@ -4,6 +4,12 @@ import { ListingFilters } from "@/types";
 export function buildListingWhere(filters: ListingFilters): Prisma.ListingWhereInput {
   const where: Prisma.ListingWhereInput = {};
 
+  if (filters.searchMode) {
+    where.searchMode = filters.searchMode;
+  } else {
+    where.searchMode = "commercial";
+  }
+
   if (filters.market) {
     where.market = filters.market;
   }
@@ -60,6 +66,22 @@ export function buildListingWhere(filters: ListingFilters): Prisma.ListingWhereI
     };
   }
 
+  if (filters.bedsMin !== undefined || filters.bedsMax !== undefined) {
+    where.beds = {};
+    if (filters.bedsMin !== undefined) where.beds.gte = filters.bedsMin;
+    if (filters.bedsMax !== undefined) where.beds.lte = filters.bedsMax;
+  }
+
+  if (filters.bathsMin !== undefined || filters.bathsMax !== undefined) {
+    where.baths = {};
+    if (filters.bathsMin !== undefined) where.baths.gte = filters.bathsMin;
+    if (filters.bathsMax !== undefined) where.baths.lte = filters.bathsMax;
+  }
+
+  if (filters.propSubType?.length) {
+    where.propSubType = { in: filters.propSubType };
+  }
+
   if (filters.bounds) {
     where.lat = { gte: filters.bounds.south, lte: filters.bounds.north };
     where.lng = { gte: filters.bounds.west, lte: filters.bounds.east };
@@ -70,6 +92,9 @@ export function buildListingWhere(filters: ListingFilters): Prisma.ListingWhereI
 
 export function parseFiltersFromParams(params: URLSearchParams): ListingFilters {
   const filters: ListingFilters = {};
+
+  const searchMode = params.get("searchMode");
+  if (searchMode === "commercial" || searchMode === "residential") filters.searchMode = searchMode;
 
   const market = params.get("market");
   if (market === "austin" || market === "dfw") filters.market = market;
@@ -106,6 +131,19 @@ export function parseFiltersFromParams(params: URLSearchParams): ListingFilters 
 
   const query = params.get("q");
   if (query) filters.query = query;
+
+  const bedsMin = params.get("bedsMin");
+  if (bedsMin) filters.bedsMin = Number(bedsMin);
+  const bedsMax = params.get("bedsMax");
+  if (bedsMax) filters.bedsMax = Number(bedsMax);
+
+  const bathsMin = params.get("bathsMin");
+  if (bathsMin) filters.bathsMin = Number(bathsMin);
+  const bathsMax = params.get("bathsMax");
+  if (bathsMax) filters.bathsMax = Number(bathsMax);
+
+  const propSubType = params.get("propSubType");
+  if (propSubType) filters.propSubType = propSubType.split(",") as ListingFilters["propSubType"];
 
   const sources = params.get("sources");
   if (sources) filters.sources = sources.split(",");

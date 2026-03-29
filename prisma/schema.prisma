@@ -79,6 +79,13 @@ model Listing {
   imageUrl      String?
   status        String            @default("active")
   dedupeKey     String            @unique
+  // Residential fields
+  beds          Int?
+  baths         Float?
+  garageSpaces  Int?
+  stories       Int?
+  propSubType   String?
+  searchMode    String            @default("commercial")
   createdAt     DateTime          @default(now())
   updatedAt     DateTime          @updatedAt
   variants      ListingVariant[]
@@ -89,6 +96,7 @@ model Listing {
   @@index([listingType])
   @@index([lat, lng])
   @@index([status])
+  @@index([searchMode])
 }
 
 model ListingVariant {
