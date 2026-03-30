@@ -8,7 +8,9 @@ import { RegistrationGate } from "@/components/public/RegistrationGate";
 import { SaveSearchAlert } from "@/components/public/SaveSearchAlert";
 import { CompareDrawer } from "@/components/public/CompareDrawer";
 import { RecentlyViewed } from "@/components/public/RecentlyViewed";
+import { DrawControl } from "@/components/public/DrawControl";
 import Link from "next/link";
+import maplibregl from "maplibre-gl";
 
 type SimpleListing = {
   id: string;
@@ -59,6 +61,7 @@ function SearchContent() {
   const [showSaveAlert, setShowSaveAlert] = useState(false);
   const [compareList, setCompareList] = useState<SimpleListing[]>([]);
   const [mobileView, setMobileView] = useState<"map" | "list">("map");
+  const [mapInstance, setMapInstance] = useState<maplibregl.Map | null>(null);
 
   function toggleCompare(listing: SimpleListing) {
     setCompareList((prev) => {
@@ -438,10 +441,39 @@ function SearchContent() {
       <div className="flex flex-col lg:flex-row" style={{ height: "calc(100vh - 260px)" }}>
         {/* Map */}
         <div className={`flex-1 relative min-h-[400px] ${mobileView === "list" ? "hidden lg:block" : ""}`}>
+          <DrawControl
+            map={mapInstance}
+            onPolygonComplete={(polygon) => {
+              // Calculate bounding box from polygon
+              const lngs = polygon.map((p) => p[0]);
+              const lats = polygon.map((p) => p[1]);
+              boundsRef.current = {
+                north: Math.max(...lats),
+                south: Math.min(...lats),
+                east: Math.max(...lngs),
+                west: Math.min(...lngs),
+              };
+              doFetch();
+            }}
+            onClear={() => {
+              // Reset to map's current bounds
+              if (mapInstance) {
+                const b = mapInstance.getBounds();
+                boundsRef.current = {
+                  north: b.getNorth(),
+                  south: b.getSouth(),
+                  east: b.getEast(),
+                  west: b.getWest(),
+                };
+                doFetch();
+              }
+            }}
+          />
           <Map
             geojson={geojson}
             onBoundsChange={handleBoundsChange}
             onMarkerClick={handleMarkerClick}
+            onMapReady={setMapInstance}
           />
         </div>
 

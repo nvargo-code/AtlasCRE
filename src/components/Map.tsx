@@ -8,6 +8,7 @@ interface MapProps {
   geojson: GeoJSON.FeatureCollection | null;
   onBoundsChange: (bounds: { north: number; south: number; east: number; west: number }) => void;
   onMarkerClick: (id: string) => void;
+  onMapReady?: (map: maplibregl.Map) => void;
   center?: [number, number];
   zoom?: number;
 }
@@ -22,7 +23,7 @@ function formatPopupPrice(amount: number | null): string {
   return `$${amount.toLocaleString()}`;
 }
 
-export function Map({ geojson, onBoundsChange, onMarkerClick, center, zoom }: MapProps) {
+export function Map({ geojson, onBoundsChange, onMarkerClick, onMapReady, center, zoom }: MapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const loadedRef = useRef(false);
@@ -188,6 +189,7 @@ export function Map({ geojson, onBoundsChange, onMarkerClick, center, zoom }: Ma
       map.on("mouseleave", "clusters", () => { map.getCanvas().style.cursor = ""; });
 
       emitBounds();
+      if (onMapReady) onMapReady(map);
     });
 
     map.on("moveend", emitBounds);
