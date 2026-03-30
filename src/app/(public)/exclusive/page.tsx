@@ -12,31 +12,29 @@ export const metadata: Metadata = {
 export const revalidate = 300;
 
 export default async function ExclusivePage() {
-  // Pull active listings — in production these would be tagged/flagged as team exclusives
-  const listings = await prisma.listing.findMany({
-    where: { status: "active" },
-    orderBy: { priceAmount: "desc" },
-    take: 12,
-    select: {
-      id: true,
-      address: true,
-      city: true,
-      state: true,
-      zip: true,
-      priceAmount: true,
-      priceUnit: true,
-      beds: true,
-      baths: true,
-      buildingSf: true,
-      lotSizeAcres: true,
-      propertyType: true,
-      propSubType: true,
-      imageUrl: true,
-      listingType: true,
-      searchMode: true,
-      description: true,
-    },
-  });
+  let listings: { id: string; address: string; city: string; state: string; zip: string | null; priceAmount: number | null; priceUnit: string | null; beds: number | null; baths: number | null; buildingSf: number | null; lotSizeAcres: number | null; propertyType: string; propSubType: string | null; imageUrl: string | null; listingType: string; searchMode: string; description: string | null }[] = [];
+
+  try {
+    const raw = await prisma.listing.findMany({
+      where: { status: "active" },
+      orderBy: { priceAmount: "desc" },
+      take: 12,
+      select: {
+        id: true, address: true, city: true, state: true, zip: true,
+        priceAmount: true, priceUnit: true, beds: true, baths: true,
+        buildingSf: true, lotSizeAcres: true, propertyType: true,
+        propSubType: true, imageUrl: true, listingType: true,
+        searchMode: true, description: true,
+      },
+    });
+    listings = raw.map((l) => ({
+      ...l,
+      priceAmount: l.priceAmount ? Number(l.priceAmount) : null,
+      lotSizeAcres: l.lotSizeAcres ? Number(l.lotSizeAcres) : null,
+    }));
+  } catch (e) {
+    console.error("Failed to fetch exclusive listings:", e);
+  }
 
   return (
     <>

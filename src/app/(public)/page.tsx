@@ -9,18 +9,25 @@ import { prisma } from "@/lib/prisma";
 export const revalidate = 300;
 
 export default async function HomePage() {
-  const featuredListings = await prisma.listing.findMany({
-    where: { status: "active" },
-    orderBy: { updatedAt: "desc" },
-    take: 6,
-    select: {
-      id: true, address: true, city: true, priceAmount: true, priceUnit: true,
-      beds: true, baths: true, buildingSf: true, propertyType: true,
-      propSubType: true, imageUrl: true, listingType: true, searchMode: true,
-    },
-  });
+  let featuredListings: { id: string; address: string; city: string; priceAmount: number | null; priceUnit: string | null; beds: number | null; baths: number | null; buildingSf: number | null; propertyType: string; propSubType: string | null; imageUrl: string | null; listingType: string; searchMode: string }[] = [];
+  let totalListings = 0;
 
-  const totalListings = await prisma.listing.count({ where: { status: "active" } });
+  try {
+    const raw = await prisma.listing.findMany({
+      where: { status: "active" },
+      orderBy: { updatedAt: "desc" },
+      take: 6,
+      select: {
+        id: true, address: true, city: true, priceAmount: true, priceUnit: true,
+        beds: true, baths: true, buildingSf: true, propertyType: true,
+        propSubType: true, imageUrl: true, listingType: true, searchMode: true,
+      },
+    });
+    featuredListings = raw.map((l) => ({ ...l, priceAmount: l.priceAmount ? Number(l.priceAmount) : null }));
+    totalListings = await prisma.listing.count({ where: { status: "active" } });
+  } catch (e) {
+    console.error("Failed to fetch featured listings:", e);
+  }
 
   const jsonLd = {
     "@context": "https://schema.org",

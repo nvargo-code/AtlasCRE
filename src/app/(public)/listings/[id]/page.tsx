@@ -47,6 +47,10 @@ export default async function ListingDetailPage({ params }: Props) {
 
   const serialized = {
     ...listing,
+    priceAmount: listing.priceAmount ? Number(listing.priceAmount) : null,
+    lotSizeAcres: listing.lotSizeAcres ? Number(listing.lotSizeAcres) : null,
+    lat: Number(listing.lat),
+    lng: Number(listing.lng),
     createdAt: listing.createdAt.toISOString(),
     updatedAt: listing.updatedAt.toISOString(),
     variants: listing.variants.map((v) => ({
@@ -65,7 +69,6 @@ export default async function ListingDetailPage({ params }: Props) {
       imageUrl: v.imageUrl,
       fetchedAt: v.fetchedAt.toISOString(),
     })),
-    priceAmount: listing.priceAmount ? Number(listing.priceAmount) : null,
   };
 
   return (

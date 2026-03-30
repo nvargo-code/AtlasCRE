@@ -29,19 +29,23 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }));
 
   // Dynamic listing pages
-  const listings = await prisma.listing.findMany({
-    where: { status: "active" },
-    select: { id: true, updatedAt: true },
-    orderBy: { updatedAt: "desc" },
-    take: 5000,
-  });
-
-  const listingPages: MetadataRoute.Sitemap = listings.map((listing) => ({
-    url: `${BASE_URL}/listings/${listing.id}`,
-    lastModified: listing.updatedAt,
-    changeFrequency: "weekly" as const,
-    priority: 0.5,
-  }));
+  let listingPages: MetadataRoute.Sitemap = [];
+  try {
+    const listings = await prisma.listing.findMany({
+      where: { status: "active" },
+      select: { id: true, updatedAt: true },
+      orderBy: { updatedAt: "desc" },
+      take: 5000,
+    });
+    listingPages = listings.map((listing) => ({
+      url: `${BASE_URL}/listings/${listing.id}`,
+      lastModified: listing.updatedAt,
+      changeFrequency: "weekly" as const,
+      priority: 0.5,
+    }));
+  } catch (e) {
+    console.error("Failed to fetch listings for sitemap:", e);
+  }
 
   return [...staticPages, ...neighborhoodPages, ...listingPages];
 }

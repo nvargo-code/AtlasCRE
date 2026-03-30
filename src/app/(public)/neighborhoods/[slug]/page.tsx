@@ -102,48 +102,42 @@ export default async function NeighborhoodPage({ params }: Props) {
   }
 
   // Fetch listing stats for this neighborhood
-  const [totalListings, avgPrice, recentListings] = await Promise.all([
-    prisma.listing.count({
-      where: {
-        status: "active",
-        zip: { in: hood.zips },
-      },
-    }),
-    prisma.listing.aggregate({
-      where: {
-        status: "active",
-        zip: { in: hood.zips },
-        priceAmount: { not: null },
-      },
-      _avg: { priceAmount: true },
-    }),
-    prisma.listing.findMany({
-      where: {
-        status: "active",
-        zip: { in: hood.zips },
-      },
-      orderBy: { createdAt: "desc" },
-      take: 6,
-      select: {
-        id: true,
-        address: true,
-        city: true,
-        priceAmount: true,
-        priceUnit: true,
-        beds: true,
-        baths: true,
-        buildingSf: true,
-        propertyType: true,
-        propSubType: true,
-        imageUrl: true,
-        listingType: true,
-      },
-    }),
-  ]);
+  let totalListings = 0;
+  let avg = "N/A";
+  let recentListings: { id: string; address: string; city: string; priceAmount: number | null; priceUnit: string | null; beds: number | null; baths: number | null; buildingSf: number | null; propertyType: string; propSubType: string | null; imageUrl: string | null; listingType: string }[] = [];
 
-  const avg = avgPrice._avg.priceAmount
-    ? `$${Math.round(Number(avgPrice._avg.priceAmount) / 1000)}K`
-    : "N/A";
+  try {
+    const [count, avgPrice, listings] = await Promise.all([
+      prisma.listing.count({
+        where: { status: "active", zip: { in: hood.zips } },
+      }),
+      prisma.listing.aggregate({
+        where: { status: "active", zip: { in: hood.zips }, priceAmount: { not: null } },
+        _avg: { priceAmount: true },
+      }),
+      prisma.listing.findMany({
+        where: { status: "active", zip: { in: hood.zips } },
+        orderBy: { createdAt: "desc" },
+        take: 6,
+        select: {
+          id: true, address: true, city: true, priceAmount: true, priceUnit: true,
+          beds: true, baths: true, buildingSf: true, propertyType: true,
+          propSubType: true, imageUrl: true, listingType: true,
+        },
+      }),
+    ]);
+
+    totalListings = count;
+    avg = avgPrice._avg.priceAmount
+      ? `$${Math.round(Number(avgPrice._avg.priceAmount) / 1000)}K`
+      : "N/A";
+    recentListings = listings.map((l) => ({
+      ...l,
+      priceAmount: l.priceAmount ? Number(l.priceAmount) : null,
+    }));
+  } catch (e) {
+    console.error("Failed to fetch neighborhood data:", e);
+  }
 
   return (
     <>
