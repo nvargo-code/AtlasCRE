@@ -50,12 +50,15 @@ function SearchContent() {
   const [filters, setFilters] = useState<ListingFilters>({});
   const [geojson, setGeojson] = useState<GeoJSON.FeatureCollection | null>(null);
   const [listings, setListings] = useState<SimpleListing[]>([]);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
   const [totalCount, setTotalCount] = useState(0);
   const [zillowCount, setZillowCount] = useState<number | null>(null);
   const [zillowLoading, setZillowLoading] = useState(false);
   const [showGate, setShowGate] = useState(false);
   const [showSaveAlert, setShowSaveAlert] = useState(false);
   const [compareList, setCompareList] = useState<SimpleListing[]>([]);
+  const [mobileView, setMobileView] = useState<"map" | "list">("map");
 
   function toggleCompare(listing: SimpleListing) {
     setCompareList((prev) => {
@@ -129,6 +132,7 @@ function SearchContent() {
       const data = await listRes.json();
       setListings(data.listings || []);
       setTotalCount(data.pagination?.total ?? 0);
+      setHasMore((data.pagination?.page ?? 1) < (data.pagination?.totalPages ?? 1));
     }
 
     // Zillow comparison for residential
@@ -158,6 +162,41 @@ function SearchContent() {
   }, []);
 
   useEffect(() => { doFetch(); }, [filters, doFetch]);
+
+  async function loadMore() {
+    if (loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    const f = filtersRef.current;
+    const params = new URLSearchParams();
+    if (f.searchMode) params.set("searchMode", f.searchMode);
+    if (f.market) params.set("market", f.market);
+    if (f.propertyType?.length) params.set("propertyType", f.propertyType.join(","));
+    if (f.listingType?.length) params.set("listingType", f.listingType.join(","));
+    if (f.priceMin) params.set("priceMin", f.priceMin.toString());
+    if (f.priceMax) params.set("priceMax", f.priceMax.toString());
+    if (f.query) params.set("q", f.query);
+    if (f.bedsMin) params.set("bedsMin", f.bedsMin.toString());
+    if (f.bathsMin) params.set("bathsMin", f.bathsMin.toString());
+    if (f.propSubType?.length) params.set("propSubType", f.propSubType.join(","));
+    if (f.sfMin) params.set("sfMin", f.sfMin.toString());
+    const bounds = boundsRef.current;
+    if (bounds) {
+      params.set("north", bounds.north.toString());
+      params.set("south", bounds.south.toString());
+      params.set("east", bounds.east.toString());
+      params.set("west", bounds.west.toString());
+    }
+    const nextPage = Math.floor(listings.length / 50) + 1;
+    params.set("page", (nextPage + 1).toString());
+    params.set("limit", "50");
+    const res = await fetch(`/api/listings?${params}`);
+    if (res.ok) {
+      const data = await res.json();
+      setListings((prev) => [...prev, ...(data.listings || [])]);
+      setHasMore((data.pagination?.page ?? 1) < (data.pagination?.totalPages ?? 1));
+    }
+    setLoadingMore(false);
+  }
 
   const handleBoundsChange = useCallback((bounds: { north: number; south: number; east: number; west: number }) => {
     boundsRef.current = bounds;
@@ -378,10 +417,27 @@ function SearchContent() {
       {/* Recently viewed */}
       <RecentlyViewed />
 
+      {/* Mobile view toggle */}
+      <div className="lg:hidden flex border-b border-navy/10">
+        {(["map", "list"] as const).map((v) => (
+          <button
+            key={v}
+            onClick={() => setMobileView(v)}
+            className={`flex-1 py-2.5 text-[12px] font-semibold tracking-[0.1em] uppercase transition-colors ${
+              mobileView === v
+                ? "bg-navy text-white"
+                : "bg-white text-mid-gray"
+            }`}
+          >
+            {v === "map" ? "Map View" : `List (${totalCount})`}
+          </button>
+        ))}
+      </div>
+
       {/* Main content: Map + List */}
       <div className="flex flex-col lg:flex-row" style={{ height: "calc(100vh - 260px)" }}>
         {/* Map */}
-        <div className="flex-1 relative min-h-[400px]">
+        <div className={`flex-1 relative min-h-[400px] ${mobileView === "list" ? "hidden lg:block" : ""}`}>
           <Map
             geojson={geojson}
             onBoundsChange={handleBoundsChange}
@@ -390,7 +446,7 @@ function SearchContent() {
         </div>
 
         {/* Results sidebar */}
-        <div className="w-full lg:w-[380px] bg-white border-l border-navy/10 overflow-y-auto">
+        <div className={`w-full lg:w-[380px] bg-white border-l border-navy/10 overflow-y-auto ${mobileView === "map" ? "hidden lg:block" : ""}`}>
           <div className="p-4 border-b border-navy/10 flex items-center justify-between">
             <p className="text-[12px] font-semibold tracking-[0.1em] uppercase text-mid-gray">
               {totalCount.toLocaleString()} Results
@@ -448,6 +504,17 @@ function SearchContent() {
                   </div>
                 </button>
               ))}
+              {hasMore && (
+                <div className="p-4 text-center">
+                  <button
+                    onClick={loadMore}
+                    disabled={loadingMore}
+                    className="text-[12px] font-semibold tracking-[0.1em] uppercase text-gold hover:text-gold-dark transition-colors disabled:opacity-50"
+                  >
+                    {loadingMore ? "Loading..." : `Load More (${listings.length} of ${totalCount})`}
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
