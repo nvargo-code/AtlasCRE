@@ -5,6 +5,7 @@ import { RevealSection } from "./RevealSection";
 import { MortgageCalculator } from "./MortgageCalculator";
 import { ShareButtons } from "./ShareButtons";
 import { ListingMap } from "./ListingMap";
+import { ImageGallery } from "./ImageGallery";
 import { addToRecentlyViewed } from "./RecentlyViewed";
 import { useEffect } from "react";
 
@@ -99,17 +100,16 @@ export function ListingDetailClient({ listing }: { listing: ListingData }) {
       {/* Hero section */}
       <section className="bg-warm-gray pb-12">
         <div className="max-w-[1400px] mx-auto px-6 md:px-10">
-          {/* Image */}
-          {listing.imageUrl && (
-            <div className="aspect-[16/7] w-full bg-navy/5 mb-8 overflow-hidden">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={listing.imageUrl}
-                alt={listing.address}
-                className="w-full h-full object-cover"
-              />
-            </div>
-          )}
+          {/* Image gallery */}
+          <div className="mb-8">
+            <ImageGallery
+              images={[...new Set([
+                listing.imageUrl,
+                ...listing.variants.map((v) => v.imageUrl),
+              ].filter((url): url is string => !!url))]}
+              address={listing.address}
+            />
+          </div>
 
           <div className="grid lg:grid-cols-[1fr_380px] gap-12">
             {/* Main info */}
