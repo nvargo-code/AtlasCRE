@@ -94,6 +94,14 @@ function SearchContent() {
     if (bedsMin) f.bedsMin = Number(bedsMin);
     const bathsMin = searchParams.get("bathsMin");
     if (bathsMin) f.bathsMin = Number(bathsMin);
+    const market = searchParams.get("market");
+    if (market === "austin" || market === "dfw") f.market = market;
+    const lt = searchParams.get("listingType");
+    if (lt) f.listingType = lt.split(",") as ListingFilters["listingType"];
+    const sfMin = searchParams.get("sfMin");
+    if (sfMin) f.sfMin = Number(sfMin);
+    const pst = searchParams.get("propSubType");
+    if (pst) f.propSubType = pst.split(",") as ListingFilters["propSubType"];
     setFilters(f);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -165,6 +173,24 @@ function SearchContent() {
   }, []);
 
   useEffect(() => { doFetch(); }, [filters, doFetch]);
+
+  // Sync filters to URL for shareable searches
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (filters.searchMode) params.set("searchMode", filters.searchMode);
+    if (filters.query) params.set("q", filters.query);
+    if (filters.market) params.set("market", filters.market);
+    if (filters.priceMin) params.set("priceMin", filters.priceMin.toString());
+    if (filters.priceMax) params.set("priceMax", filters.priceMax.toString());
+    if (filters.bedsMin) params.set("bedsMin", filters.bedsMin.toString());
+    if (filters.bathsMin) params.set("bathsMin", filters.bathsMin.toString());
+    if (filters.propertyType?.length) params.set("propertyType", filters.propertyType.join(","));
+    if (filters.listingType?.length) params.set("listingType", filters.listingType.join(","));
+    if (filters.sfMin) params.set("sfMin", filters.sfMin.toString());
+    if (filters.propSubType?.length) params.set("propSubType", filters.propSubType.join(","));
+    const url = params.toString() ? `/search?${params.toString()}` : "/search";
+    router.replace(url, { scroll: false });
+  }, [filters, router]);
 
   async function loadMore() {
     if (loadingMore || !hasMore) return;
