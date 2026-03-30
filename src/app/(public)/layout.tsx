@@ -1,0 +1,20 @@
+import { PublicNav } from "@/components/public/PublicNav";
+import { Footer } from "@/components/public/Footer";
+import { ValuationCTA } from "@/components/public/ValuationCTA";
+import { ScrollToTop } from "@/components/public/ScrollToTop";
+
+export default function PublicLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <>
+      <PublicNav />
+      <main>{children}</main>
+      <Footer />
+      <ValuationCTA />
+      <ScrollToTop />
+    </>
+  );
+}

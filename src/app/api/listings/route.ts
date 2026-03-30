@@ -5,10 +5,9 @@ import { prisma } from "@/lib/prisma";
 import { parseFiltersFromParams, buildListingWhere } from "@/lib/filters";
 
 export async function GET(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  // Allow public access for search — auth is optional
+  // (Agent dashboard also uses this endpoint when authenticated)
+  const _session = await getServerSession(authOptions);
 
   const params = req.nextUrl.searchParams;
   const filters = parseFiltersFromParams(params);

@@ -37,10 +37,7 @@ function DashboardContent() {
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const initialLoadDone = useRef(false);
 
-  // Redirect if not authenticated
-  useEffect(() => {
-    if (status === "unauthenticated") router.push("/login");
-  }, [status, router]);
+  // Auth redirect handled by middleware
 
   // Load available sources
   useEffect(() => {
@@ -83,7 +80,7 @@ function DashboardContent() {
     if (filters.bathsMin) params.set("bathsMin", filters.bathsMin.toString());
     if (filters.bathsMax) params.set("bathsMax", filters.bathsMax.toString());
     if (filters.propSubType?.length) params.set("propSubType", filters.propSubType.join(","));
-    const url = params.toString() ? `?${params.toString()}` : "/";
+    const url = params.toString() ? `/dashboard?${params.toString()}` : "/dashboard";
     router.replace(url, { scroll: false });
   }, [filters, router]);
 

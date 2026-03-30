@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Montserrat, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const montserrat = Montserrat({
+  variable: "--font-montserrat",
   subsets: ["latin"],
+  weight: ["100", "200", "300", "400", "500", "600", "700", "800", "900"],
 });
 
 const geistMono = Geist_Mono({
@@ -14,8 +15,24 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AtlasCRE - Commercial Real Estate Dashboard",
-  description: "Map-based commercial real estate dashboard for Austin TX and DFW TX",
+  title: "Shapiro Group | Austin Luxury Real Estate",
+  description:
+    "Austin's most comprehensive property search. SuperSearch finds more listings than Zillow. Shapiro Group — informed real estate decisions.",
+  keywords: [
+    "Austin real estate",
+    "Austin luxury homes",
+    "Austin realtor",
+    "Shapiro Group",
+    "SuperSearch",
+    "Austin homes for sale",
+  ],
+  openGraph: {
+    title: "Shapiro Group | Austin Luxury Real Estate",
+    description:
+      "SuperSearch finds more listings than Zillow. Informed real estate decisions in Austin, TX.",
+    type: "website",
+    locale: "en_US",
+  },
 };
 
 export default function RootLayout({
@@ -26,7 +43,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100`}
+        className={`${montserrat.variable} ${geistMono.variable} antialiased bg-white text-navy`}
       >
         <Providers>{children}</Providers>
       </body>

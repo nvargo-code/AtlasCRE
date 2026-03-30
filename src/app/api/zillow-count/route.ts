@@ -1,6 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 
 // Simple in-memory cache: key -> { count, timestamp }
 const cache = new Map<string, { count: number; ts: number }>();
@@ -20,10 +18,7 @@ interface ZillowSearchState {
 }
 
 export async function GET(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  // Public endpoint — used by both dashboard and public search
 
   const params = req.nextUrl.searchParams;
   const location = params.get("location"); // zip code or city name
