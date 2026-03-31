@@ -88,8 +88,10 @@ model Listing {
   searchMode    String            @default("commercial")
   createdAt     DateTime          @default(now())
   updatedAt     DateTime          @updatedAt
-  variants      ListingVariant[]
-  favorites     FavoriteListing[]
+  variants        ListingVariant[]
+  favorites       FavoriteListing[]
+  photos          ListingPhoto[]
+  processedEmails ProcessedEmail[]
 
   @@index([market])
   @@index([propertyType])
@@ -119,6 +121,46 @@ model ListingVariant {
   fetchedAt   DateTime      @default(now())
 
   @@unique([sourceId, externalId])
+  @@index([listingId])
+}
+
+// ── Email scanning pipeline ──────────────────────────────────────────────────
+
+model ProcessedEmail {
+  id             String   @id @default(cuid())
+  gmailMessageId String   @unique // Gmail message ID to avoid re-processing
+  threadId       String?  // Gmail thread ID
+  from           String
+  subject        String
+  receivedAt     DateTime
+  processedAt    DateTime @default(now())
+  // Detection results
+  isPocketListing Boolean  @default(false)
+  confidence      Float    @default(0)
+  keywords        String[] // Which keywords matched
+  mlsNumber       String?  // MLS# if found (for context)
+  // Outcome
+  listingId       String?  // If a listing was created from this email
+  listing         Listing? @relation(fields: [listingId], references: [id], onDelete: SetNull)
+  status          String   @default("processed") // processed | ingested | skipped | error
+  errorMessage    String?
+  rawBody         String?  // Store email body for debugging
+  extractedData   Json?    // Parsed listing data
+
+  @@index([gmailMessageId])
+  @@index([processedAt])
+  @@index([isPocketListing])
+}
+
+model ListingPhoto {
+  id        String   @id @default(cuid())
+  listingId String
+  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  url       String   // Stored URL (could be original or re-hosted)
+  sourceUrl String?  // Original URL where we found it
+  position  Int      @default(0) // Display order
+  createdAt DateTime @default(now())
+
   @@index([listingId])
 }
 
