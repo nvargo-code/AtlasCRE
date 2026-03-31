@@ -108,7 +108,7 @@ export default function PrivacyPage() {
           <section>
             <h2 className="text-lg font-semibold text-navy mb-3">Contact</h2>
             <p>
-              Vivid Acres LLC DBA Shapiro Real Estate Group<br />
+              Shapiro Real Estate Group<br />
               2028 Ben White Blvd, Suite 240-7070<br />
               Austin, TX 78741<br />
               <a href="mailto:team@shapirogroup.co" className="text-gold hover:underline">

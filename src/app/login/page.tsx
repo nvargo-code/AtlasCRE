@@ -54,7 +54,7 @@ export default function LoginPage() {
         </div>
 
         <p className="text-white/20 text-[11px]">
-          &copy; {new Date().getFullYear()} Vivid Acres LLC DBA Shapiro Real Estate Group
+          &copy; {new Date().getFullYear()} Shapiro Real Estate Group
         </p>
       </div>
 

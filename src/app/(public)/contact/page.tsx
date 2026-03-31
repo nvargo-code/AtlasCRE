@@ -86,7 +86,7 @@ export default function ContactPage() {
                     Brokerage
                   </h3>
                   <p className="text-mid-gray text-sm">
-                    Vivid Acres LLC DBA Shapiro Real Estate Group<br />
+                    Shapiro Real Estate Group<br />
                     Brokered by eXp Realty
                   </p>
                 </div>

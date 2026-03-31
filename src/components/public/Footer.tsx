@@ -184,7 +184,7 @@ export function Footer() {
           </div>
           <div className="text-[11px] text-white/30 text-center md:text-right leading-relaxed">
             <p>
-              &copy; {new Date().getFullYear()} Vivid Acres LLC DBA Shapiro Real Estate Group.
+              &copy; {new Date().getFullYear()} Shapiro Real Estate Group.
               Brokered by eXp Realty. All rights reserved.
             </p>
             <div className="flex gap-4 justify-center md:justify-end mt-2">
