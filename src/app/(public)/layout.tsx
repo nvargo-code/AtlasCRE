@@ -2,6 +2,7 @@ import { PublicNav } from "@/components/public/PublicNav";
 import { Footer } from "@/components/public/Footer";
 import { ValuationCTA } from "@/components/public/ValuationCTA";
 import { ScrollToTop } from "@/components/public/ScrollToTop";
+import { ScrollReset } from "@/components/public/ScrollReset";
 
 export default function PublicLayout({
   children,
@@ -15,6 +16,7 @@ export default function PublicLayout({
       <Footer />
       <ValuationCTA />
       <ScrollToTop />
+      <ScrollReset />
     </>
   );
 }

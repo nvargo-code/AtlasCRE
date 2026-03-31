@@ -15,6 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://shapirogroup.co"),
   title: "Shapiro Group | Austin Luxury Real Estate",
   description:
     "Austin's most comprehensive property search. SuperSearch finds more listings than Zillow. Shapiro Group — informed real estate decisions.",
