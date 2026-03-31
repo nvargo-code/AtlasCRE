@@ -22,14 +22,31 @@ model User {
   role           Role              @default(USER)
   tenantId       String
   tenant         Tenant            @relation(fields: [tenantId], references: [id])
+  phone          String?
+  avatarUrl      String?
   createdAt      DateTime          @default(now())
   savedSearches  SavedSearch[]
   favorites      FavoriteListing[]
+  // Portal relations
+  agentClients     AgentClient[]        @relation("AgentClients")
+  clientAgents     AgentClient[]        @relation("ClientAgents")
+  collectionsCreated Collection[]       @relation("CollectionsCreated")
+  collectionMemberships CollectionMember[] @relation("CollectionMemberships")
+  collectionListingsAdded CollectionListing[] @relation("CollectionListingsAdded")
+  collectionReactions CollectionReaction[] @relation("CollectionReactions")
+  collectionComments  CollectionComment[]  @relation("CollectionComments")
+  threadParticipations ThreadParticipant[] @relation("ThreadParticipations")
+  messagesSent    Message[]            @relation("MessagesSent")
+  showingRequestsAsClient ShowingRequest[] @relation("ShowingRequestsAsClient")
+  showingRequestsAsAgent  ShowingRequest[] @relation("ShowingRequestsAsAgent")
+  listingActivities ListingActivity[]  @relation("ListingActivities")
 }
 
 enum Role {
-  USER
-  ADMIN
+  USER    // Public registered user (buyer/seller lead)
+  CLIENT  // Active client assigned to an agent
+  AGENT   // Licensed agent on the team
+  ADMIN   // Platform admin
 }
 
 model ListingSource {
@@ -92,6 +109,12 @@ model Listing {
   favorites       FavoriteListing[]
   photos          ListingPhoto[]
   processedEmails ProcessedEmail[]
+  // Portal relations
+  collectionListings CollectionListing[]
+  messageThreads     MessageThread[]
+  showingRequests    ShowingRequest[]
+  activities         ListingActivity[]
+  hotScore           HotScore?
 
   @@index([market])
   @@index([propertyType])
@@ -163,6 +186,209 @@ model ListingPhoto {
 
   @@index([listingId])
 }
+
+// ══════════════════════════════════════════════════════════════════════════════
+// CLIENT PORTAL — Agent-Client collaboration, messaging, showings, scoring
+// ══════════════════════════════════════════════════════════════════════════════
+
+// ── Agent-Client Relationship ───────────────────────────────────────────────
+
+model AgentClient {
+  id          String   @id @default(cuid())
+  agentId     String   // User with AGENT role
+  agent       User     @relation("AgentClients", fields: [agentId], references: [id])
+  clientId    String   // User with CLIENT role
+  client      User     @relation("ClientAgents", fields: [clientId], references: [id])
+  status      String   @default("active") // active | archived | closed
+  stage       String   @default("new") // new | searching | touring | offer | under_contract | closed
+  notes       String?  // Agent's private notes about this client
+  priceMin    Float?
+  priceMax    Float?
+  targetAreas String[] // ZIP codes or neighborhood names
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([agentId, clientId])
+  @@index([agentId])
+  @@index([clientId])
+  @@index([stage])
+}
+
+// ── Collections (Compass-style boards) ──────────────────────────────────────
+
+model Collection {
+  id          String             @id @default(cuid())
+  name        String
+  description String?
+  createdById String
+  createdBy   User               @relation("CollectionsCreated", fields: [createdById], references: [id])
+  shareToken  String             @unique @default(cuid()) // For share-via-link
+  isPublic    Boolean            @default(false) // Accessible via share link without login
+  listings    CollectionListing[]
+  members     CollectionMember[]
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  @@index([createdById])
+}
+
+model CollectionMember {
+  id           String     @id @default(cuid())
+  collectionId String
+  collection   Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User       @relation("CollectionMemberships", fields: [userId], references: [id])
+  role         String     @default("viewer") // owner | editor | viewer
+  createdAt    DateTime   @default(now())
+
+  @@unique([collectionId, userId])
+}
+
+model CollectionListing {
+  id           String     @id @default(cuid())
+  collectionId String
+  collection   Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  listingId    String
+  listing      Listing    @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  addedById    String
+  addedBy      User       @relation("CollectionListingsAdded", fields: [addedById], references: [id])
+  // Reactions & notes per listing in this collection
+  reactions    CollectionReaction[]
+  comments     CollectionComment[]
+  position     Int        @default(0) // Display order
+  createdAt    DateTime   @default(now())
+
+  @@unique([collectionId, listingId])
+  @@index([collectionId])
+  @@index([listingId])
+}
+
+model CollectionReaction {
+  id                  String            @id @default(cuid())
+  collectionListingId String
+  collectionListing   CollectionListing @relation(fields: [collectionListingId], references: [id], onDelete: Cascade)
+  userId              String
+  user                User              @relation("CollectionReactions", fields: [userId], references: [id])
+  reaction            String            // love | like | maybe | dislike
+  createdAt           DateTime          @default(now())
+
+  @@unique([collectionListingId, userId])
+}
+
+model CollectionComment {
+  id                  String            @id @default(cuid())
+  collectionListingId String
+  collectionListing   CollectionListing @relation(fields: [collectionListingId], references: [id], onDelete: Cascade)
+  userId              String
+  user                User              @relation("CollectionComments", fields: [userId], references: [id])
+  body                String
+  createdAt           DateTime          @default(now())
+
+  @@index([collectionListingId])
+}
+
+// ── Messaging ───────────────────────────────────────────────────────────────
+
+model MessageThread {
+  id          String    @id @default(cuid())
+  listingId   String?   // Optional — can be about a specific listing
+  listing     Listing?  @relation(fields: [listingId], references: [id], onDelete: SetNull)
+  subject     String?
+  messages    Message[]
+  participants ThreadParticipant[]
+  lastMessageAt DateTime @default(now())
+  createdAt   DateTime  @default(now())
+
+  @@index([listingId])
+  @@index([lastMessageAt])
+}
+
+model ThreadParticipant {
+  id       String        @id @default(cuid())
+  threadId String
+  thread   MessageThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  userId   String
+  user     User          @relation("ThreadParticipations", fields: [userId], references: [id])
+  lastRead DateTime?     // Tracks unread messages
+
+  @@unique([threadId, userId])
+}
+
+model Message {
+  id       String        @id @default(cuid())
+  threadId String
+  thread   MessageThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  senderId String
+  sender   User          @relation("MessagesSent", fields: [senderId], references: [id])
+  body     String
+  createdAt DateTime     @default(now())
+
+  @@index([threadId])
+  @@index([senderId])
+}
+
+// ── Showing Requests ────────────────────────────────────────────────────────
+
+model ShowingRequest {
+  id           String   @id @default(cuid())
+  clientId     String
+  client       User     @relation("ShowingRequestsAsClient", fields: [clientId], references: [id])
+  agentId      String?
+  agent        User?    @relation("ShowingRequestsAsAgent", fields: [agentId], references: [id])
+  listingId    String
+  listing      Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  // Scheduling
+  preferredDate DateTime?
+  preferredTime String?  // "morning" | "afternoon" | "evening" | specific time
+  alternateDate DateTime?
+  status        String   @default("requested") // requested | confirmed | completed | cancelled
+  // Feedback (post-showing)
+  rating        Int?     // 1-5 overall impression
+  feedback      String?  // Free-text feedback
+  wouldOffer    Boolean? // Would you make an offer?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([clientId])
+  @@index([agentId])
+  @@index([listingId])
+  @@index([status])
+}
+
+// ── Behavioral Tracking ─────────────────────────────────────────────────────
+
+model ListingActivity {
+  id        String   @id @default(cuid())
+  userId    String?  // null for anonymous visitors
+  user      User?    @relation("ListingActivities", fields: [userId], references: [id])
+  listingId String
+  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  action    String   // view | save | unsave | share | compare | request_showing | click_photo | time_spent
+  metadata  Json?    // Extra data: { timeSpent: 45, source: "search" }
+  sessionId String?  // Anonymous session tracking
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([listingId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+// ── Hot Score (per-listing competitiveness) ──────────────────────────────────
+
+model HotScore {
+  id        String   @id @default(cuid())
+  listingId String   @unique
+  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  score     Int      // 0-100
+  signals   Json     // { saves: 12, viewVelocity: 45, priceVsComps: -3, domVsAvg: 0.5, ... }
+  reasoning String   // Human-readable explanation
+  updatedAt DateTime @updatedAt
+
+  @@index([score])
+}
+
+// ── Saved Searches (with alert preferences) ─────────────────────────────────
 
 model SavedSearch {
   id        String   @id @default(cuid())
