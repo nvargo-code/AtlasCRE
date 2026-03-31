@@ -9,7 +9,7 @@ export const metadata: Metadata = {
     "Curated properties from the Shapiro Group — our own listings, off-market exclusives, and hand-selected opportunities in Austin, TX.",
 };
 
-export const revalidate = 300;
+export const dynamic = "force-dynamic";
 
 export default async function ExclusivePage() {
   let listings: { id: string; address: string; city: string; state: string; zip: string | null; priceAmount: number | null; priceUnit: string | null; beds: number | null; baths: number | null; buildingSf: number | null; lotSizeAcres: number | null; propertyType: string; propSubType: string | null; imageUrl: string | null; listingType: string; searchMode: string; description: string | null }[] = [];

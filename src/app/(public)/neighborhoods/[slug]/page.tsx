@@ -26,11 +26,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export function generateStaticParams() {
-  const richSlugs = NEIGHBORHOODS.map((n) => n.slug);
-  const fallbackSlugs = Object.keys(FALLBACK_NEIGHBORHOODS);
-  return [...new Set([...richSlugs, ...fallbackSlugs])].map((slug) => ({ slug }));
-}
+// Dynamic rendering — these pages query the database for listing stats
+export const dynamic = "force-dynamic";
 
 function RecommendationSection({ title, icon, items }: { title: string; icon: string; items: Recommendation[] }) {
   if (items.length === 0) return null;

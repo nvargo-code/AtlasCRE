@@ -6,7 +6,7 @@ import { TestimonialSlider } from "@/components/public/TestimonialSlider";
 import { RevealSection } from "@/components/public/RevealSection";
 import { prisma } from "@/lib/prisma";
 
-export const revalidate = 300;
+export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
   let featuredListings: { id: string; address: string; city: string; priceAmount: number | null; priceUnit: string | null; beds: number | null; baths: number | null; buildingSf: number | null; propertyType: string; propSubType: string | null; imageUrl: string | null; listingType: string; searchMode: string }[] = [];
