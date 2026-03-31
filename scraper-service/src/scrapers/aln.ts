@@ -182,6 +182,7 @@ interface RawCard {
   brokerText: string;
   img: string;
   link: string;
+  fullText: string;
 }
 
 async function scrapeListingsPage(page: Page): Promise<NormalizedListing[]> {
@@ -190,19 +191,23 @@ async function scrapeListingsPage(page: Page): Promise<NormalizedListing[]> {
   console.log("[aln] Scraping page:", url);
 
   // Batch extract all card data in one browser call
+  // Use :not() to avoid matching nested elements inside cards
   const rawCards: RawCard[] = await page.$$eval(
-    ".listing-card, .property-card, .listing-item, .property-item, [class*='listing'], [class*='property'], article",
+    "article, .listing-card, .property-card, .listing-item, .property-item",
     (els) => els.map((el) => {
       const t = (sel: string) => el.querySelector(sel)?.textContent?.trim() ?? "";
       const a = (sel: string, attr: string) => (el.querySelector(sel) as HTMLElement | null)?.getAttribute(attr) ?? "";
+      // Full text of the element for address fallback
+      const fullText = el.textContent?.trim() ?? "";
       return {
-        addressText: t(".address, [class*='address'], [data-field='address']") || t("h2, h3, h4"),
+        addressText: t(".address, [class*='address'], [data-field='address']") || t("h2, h3, h4") || fullText.split("\n")[0],
         priceText:   t(".price, [class*='price'], [data-field='price']"),
         sqftText:    t(".sqft, [class*='sqft'], [class*='size'], [data-field='sqft']"),
         typeText:    t(".type, [class*='type'], [class*='property-type']"),
         brokerText:  t(".broker, [class*='broker'], [class*='agent']"),
         img:         a("img", "src"),
         link:        a("a", "href"),
+        fullText,
       };
     })
   ).catch(() => [] as RawCard[]);
@@ -210,12 +215,17 @@ async function scrapeListingsPage(page: Page): Promise<NormalizedListing[]> {
   console.log(`[aln] Found ${rawCards.length} potential listing elements`);
 
   // Parse card data (sync, no I/O)
+  // ALN address format: "10221 David Moore\n\nAustin , TX 78748"
+  const seen = new Set<string>();
   const parsed = rawCards
     .filter((c) => !!c.addressText)
     .map((c) => {
-      const parts = c.addressText.split(",").map((s) => s.trim());
-      const address = parts[0] ?? c.addressText;
-      const city = parts[1] ?? "Austin";
+      // Split on newlines first, then fall back to comma splitting
+      const lines = c.addressText.split(/\n+/).map((s) => s.trim()).filter(Boolean);
+      const address = lines[0] ?? c.addressText;
+      const cityLine = lines[1] ?? "";
+      const cityMatch = cityLine.match(/^([^,]+)/);
+      const city = cityMatch?.[1]?.trim().replace(/\s+/g, " ") || "Austin";
 
       let priceAmount: number | undefined;
       if (c.priceText) {
@@ -235,7 +245,15 @@ async function scrapeListingsPage(page: Page): Promise<NormalizedListing[]> {
       const id = sourceUrl ? sourceUrl.split("/").filter(Boolean).pop() ?? address : address;
 
       return { address, city, priceAmount, buildingSf, sourceUrl, id, c };
+    })
+    .filter((p) => {
+      // Deduplicate by address
+      if (seen.has(p.address.toLowerCase())) return false;
+      seen.add(p.address.toLowerCase());
+      return true;
     });
+
+  console.log(`[aln] ${parsed.length} unique listings after dedup`);
 
   // Geocode sequentially — Nominatim allows 1 req/s; cache means most are instant
   const listings: NormalizedListing[] = [];
