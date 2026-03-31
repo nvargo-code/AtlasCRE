@@ -73,6 +73,37 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
               </Link>
             );
           })}
+
+          {/* Agent section */}
+          {((session?.user as { role?: string })?.role === "ADMIN" || (session?.user as { role?: string })?.role === "AGENT") && (
+            <>
+              <div className="border-t border-white/10 mt-4 pt-4 mb-2 px-4">
+                <span className="text-[10px] font-semibold tracking-[0.15em] uppercase text-white/30">Agent Tools</span>
+              </div>
+              {[
+                { href: "/portal/agent", label: "Agent Dashboard", icon: "grid" },
+                { href: "/portal/agent/clients", label: "Client Activity", icon: "heart" },
+                { href: "/admin-email", label: "Add Pocket Listing", icon: "folder" },
+                { href: "/dashboard", label: "Legacy Dashboard", icon: "search" },
+              ].map((item) => {
+                const isActive = pathname === item.href;
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm transition-colors ${
+                      isActive
+                        ? "bg-white/10 text-white"
+                        : "text-white/30 hover:text-white/60 hover:bg-white/5"
+                    }`}
+                  >
+                    <NavIcon icon={item.icon} />
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </>
+          )}
         </nav>
 
         <div className="p-4 border-t border-white/10">

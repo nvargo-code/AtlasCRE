@@ -590,16 +590,38 @@ function SearchContent() {
                       {listing.baths && <span>{listing.baths} bath</span>}
                       {listing.buildingSf && <span>{listing.buildingSf.toLocaleString()} SF</span>}
                     </div>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); toggleCompare(listing); }}
-                      className={`text-[10px] font-semibold tracking-[0.08em] uppercase px-2 py-0.5 transition-colors ${
-                        compareList.find((l) => l.id === listing.id)
-                          ? "bg-gold text-white"
-                          : "bg-navy/5 text-navy/40 hover:text-gold"
-                      }`}
-                    >
-                      {compareList.find((l) => l.id === listing.id) ? "Added" : "Compare"}
-                    </button>
+                    <div className="flex gap-1">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); toggleCompare(listing); }}
+                        className={`text-[10px] font-semibold tracking-[0.08em] uppercase px-2 py-0.5 transition-colors ${
+                          compareList.find((l) => l.id === listing.id)
+                            ? "bg-gold text-white"
+                            : "bg-navy/5 text-navy/40 hover:text-gold"
+                        }`}
+                      >
+                        {compareList.find((l) => l.id === listing.id) ? "Added" : "Compare"}
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          // Quick save via favorites API
+                          fetch(`/api/favorites/${listing.id}`, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({}),
+                          }).catch(() => {});
+                          fetch("/api/portal/activity", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ listingId: listing.id, action: "save" }),
+                          }).catch(() => {});
+                        }}
+                        className="text-[10px] font-semibold tracking-[0.08em] uppercase px-2 py-0.5 bg-navy/5 text-navy/40 hover:text-red-500 transition-colors"
+                        title="Save"
+                      >
+                        &#9825;
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
