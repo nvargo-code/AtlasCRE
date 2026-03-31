@@ -3,16 +3,24 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
+
+// Pages with dark (navy) hero backgrounds where nav should start transparent
+const DARK_HERO_PAGES = ["/", "/buy", "/sell", "/team", "/about", "/contact", "/careers", "/blog", "/exclusive", "/valuation", "/find", "/privacy"];
 
 export function PublicNav() {
-  const [scrolled, setScrolled] = useState(false);
+  const pathname = usePathname();
+  const hasDarkHero = DARK_HERO_PAGES.includes(pathname) || pathname.startsWith("/neighborhoods/");
+  const [scrolled, setScrolled] = useState(!hasDarkHero);
   const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
+    if (!hasDarkHero) { setScrolled(true); return; }
     const onScroll = () => setScrolled(window.scrollY > 50);
+    onScroll(); // check initial position
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
-  }, []);
+  }, [hasDarkHero]);
 
   return (
     <>

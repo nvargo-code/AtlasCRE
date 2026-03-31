@@ -9,6 +9,9 @@ import { SaveSearchAlert } from "@/components/public/SaveSearchAlert";
 import { CompareDrawer } from "@/components/public/CompareDrawer";
 import { RecentlyViewed } from "@/components/public/RecentlyViewed";
 import { DrawControl } from "@/components/public/DrawControl";
+import { SearchFilterChips } from "@/components/public/SearchFilterChips";
+import { AreaStatsPanel } from "@/components/public/AreaStatsPanel";
+import { HeatMapToggle } from "@/components/public/HeatMapToggle";
 import Link from "next/link";
 import maplibregl from "maplibre-gl";
 
@@ -62,6 +65,7 @@ function SearchContent() {
   const [compareList, setCompareList] = useState<SimpleListing[]>([]);
   const [mobileView, setMobileView] = useState<"map" | "list">("map");
   const [mapInstance, setMapInstance] = useState<maplibregl.Map | null>(null);
+  const [currentBounds, setCurrentBounds] = useState<{ north: number; south: number; east: number; west: number } | null>(null);
 
   function toggleCompare(listing: SimpleListing) {
     setCompareList((prev) => {
@@ -229,6 +233,7 @@ function SearchContent() {
 
   const handleBoundsChange = useCallback((bounds: { north: number; south: number; east: number; west: number }) => {
     boundsRef.current = bounds;
+    setCurrentBounds(bounds);
     if (!initialLoadDone.current) { initialLoadDone.current = true; return; }
     clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => doFetch(), 300);
@@ -443,6 +448,9 @@ function SearchContent() {
         </div>
       )}
 
+      {/* Filter chips */}
+      <SearchFilterChips filters={filters} onChange={setFilters} />
+
       {/* Recently viewed */}
       <RecentlyViewed />
 
@@ -501,6 +509,8 @@ function SearchContent() {
             onMarkerClick={handleMarkerClick}
             onMapReady={setMapInstance}
           />
+          <HeatMapToggle map={mapInstance} geojson={geojson} />
+          <AreaStatsPanel bounds={currentBounds} searchMode={mode} />
         </div>
 
         {/* Results sidebar */}
