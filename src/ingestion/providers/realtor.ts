@@ -91,11 +91,14 @@ async function fetchRealtorPage(
   });
 
   if (!res.ok) {
-    throw new Error(`Realtor.com API error: ${res.status} ${res.statusText}`);
+    const body = await res.text();
+    throw new Error(`Realtor.com API error: ${res.status} ${res.statusText} — ${body.slice(0, 200)}`);
   }
 
   const data: RealtorResponse = await res.json();
-  return data.data?.home_search?.results ?? [];
+  const results = data.data?.home_search?.results ?? [];
+  console.log(`[realtor] offset=${offset} → ${results.length} results, keys: ${Object.keys(data).join(",")}`);
+  return results;
 }
 
 function normalizeProperty(
