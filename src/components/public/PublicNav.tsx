@@ -96,14 +96,14 @@ export function PublicNav() {
               </Link>
 
               <Link
-                href="/login"
+                href="/portal"
                 className={`hidden lg:inline-flex text-[12px] font-medium tracking-[0.1em] uppercase transition-colors duration-300 ${
                   scrolled
                     ? "text-navy/60 hover:text-navy"
                     : "text-white/60 hover:text-white"
                 }`}
               >
-                Agent Login
+                Sign In
               </Link>
 
               {/* Mobile hamburger */}
@@ -156,7 +156,7 @@ export function PublicNav() {
             { href: "/neighborhoods", label: "Neighborhoods" },
             { href: "/careers", label: "Careers" },
             { href: "/contact", label: "Contact" },
-            { href: "/login", label: "Agent Login" },
+            { href: "/portal", label: "Sign In" },
           ].map((link) => (
             <Link
               key={link.href}

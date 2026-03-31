@@ -564,10 +564,13 @@ function SearchContent() {
           ) : (
             <div>
               {listings.map((listing) => (
-                <button
+                <div
                   key={listing.id}
+                  role="button"
+                  tabIndex={0}
                   onClick={() => handleMarkerClick(listing.id)}
-                  className={`w-full text-left p-4 border-b border-navy/5 hover:bg-warm-gray transition-colors ${
+                  onKeyDown={(e) => e.key === "Enter" && handleMarkerClick(listing.id)}
+                  className={`w-full text-left p-4 border-b border-navy/5 hover:bg-warm-gray transition-colors cursor-pointer ${
                     selectedListing?.id === listing.id ? "bg-warm-gray" : ""
                   }`}
                 >
@@ -598,7 +601,7 @@ function SearchContent() {
                       {compareList.find((l) => l.id === listing.id) ? "Added" : "Compare"}
                     </button>
                   </div>
-                </button>
+                </div>
               ))}
               {hasMore && (
                 <div className="p-4 text-center">

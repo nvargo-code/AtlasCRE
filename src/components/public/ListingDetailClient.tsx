@@ -6,6 +6,7 @@ import { MortgageCalculator } from "./MortgageCalculator";
 import { ShareButtons } from "./ShareButtons";
 import { ListingMap } from "./ListingMap";
 import { ImageGallery } from "./ImageGallery";
+import { ListingActions } from "./ListingActions";
 import { addToRecentlyViewed } from "./RecentlyViewed";
 import { useEffect } from "react";
 
@@ -179,42 +180,12 @@ export function ListingDetailClient({ listing, similarListings = [] }: { listing
               </div>
             </div>
 
-            {/* Contact card */}
-            <div className="bg-white p-8 h-fit">
-              <h3 className="text-lg font-semibold text-navy mb-4">
-                Interested in this property?
-              </h3>
-              <p className="text-sm text-mid-gray mb-6">
-                Schedule a showing or get more details from our team.
-              </p>
-              <div className="space-y-3">
-                <Link href="/contact" className="btn-primary w-full text-center">
-                  Schedule a Showing
-                </Link>
-                <a
-                  href="tel:5125376023"
-                  className="btn-outline-dark w-full text-center"
-                >
-                  Call 512.537.6023
-                </a>
-                <div className="flex gap-2">
-                  <a
-                    href={`sms:5125376023?body=Hi, I'm interested in ${listing.address}, ${listing.city}`}
-                    className="flex-1 text-center py-2.5 bg-navy/5 text-navy text-[11px] font-semibold tracking-[0.1em] uppercase hover:bg-navy/10 transition-colors"
-                  >
-                    Text Us
-                  </a>
-                  <a
-                    href={`https://wa.me/15125376023?text=Hi, I'm interested in ${encodeURIComponent(listing.address + ', ' + listing.city)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex-1 text-center py-2.5 bg-navy/5 text-navy text-[11px] font-semibold tracking-[0.1em] uppercase hover:bg-navy/10 transition-colors"
-                  >
-                    WhatsApp
-                  </a>
-                </div>
-              </div>
-            </div>
+            {/* Action card — showing, save, message, collection */}
+            <ListingActions
+              listingId={listing.id}
+              address={listing.address}
+              city={listing.city}
+            />
           </div>
         </div>
       </section>
