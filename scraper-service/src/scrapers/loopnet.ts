@@ -171,15 +171,19 @@ async function scrapeListingCards(page: Page, market: "austin" | "dfw", listingT
 }
 
 async function geocodeAddress(address: string, city: string, state: string): Promise<{ lat: number; lng: number } | null> {
+  const token = process.env.MAPBOX_TOKEN;
+  if (!token) return null;
+
   try {
     const q = encodeURIComponent(`${address}, ${city}, ${state}`);
     const res = await fetch(
-      `https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=1`,
-      { headers: { "User-Agent": "AtlasCRE/1.0 (internal)" } }
+      `https://api.mapbox.com/geocoding/v5/mapbox.places/${q}.json?access_token=${token}&limit=1&country=US`,
+      { signal: AbortSignal.timeout(10000) }
     );
-    const data = await res.json() as Array<{ lat: string; lon: string }>;
-    if (!data.length) return null;
-    return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+    const data = await res.json() as { features: Array<{ center: [number, number] }> };
+    if (!data.features?.length) return null;
+    const [lng, lat] = data.features[0].center;
+    return { lat, lng };
   } catch {
     return null;
   }
@@ -233,7 +237,6 @@ export async function scrapeLoopNet(
             if (!geo) continue;
             lat = geo.lat;
             lng = geo.lng;
-            await new Promise((r) => setTimeout(r, 200)); // rate limit geocoder
           }
 
           listings.push({

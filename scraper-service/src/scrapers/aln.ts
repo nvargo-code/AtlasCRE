@@ -155,15 +155,22 @@ async function geocodeAddress(address: string, city: string, state: string): Pro
   const key = `${address}|${city}|${state}`.toLowerCase();
   if (geocache[key]) return geocache[key];
 
+  const token = process.env.MAPBOX_TOKEN;
+  if (!token) {
+    console.warn("[aln] MAPBOX_TOKEN not set — skipping geocode");
+    return null;
+  }
+
   try {
     const q = encodeURIComponent(`${address}, ${city}, ${state}`);
     const res = await fetch(
-      `https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=1`,
-      { headers: { "User-Agent": "AtlasCRE/1.0 (internal)" }, signal: AbortSignal.timeout(10000) }
+      `https://api.mapbox.com/geocoding/v5/mapbox.places/${q}.json?access_token=${token}&limit=1&country=US`,
+      { signal: AbortSignal.timeout(10000) }
     );
-    const data = await res.json() as Array<{ lat: string; lon: string }>;
-    if (!data.length) return null;
-    const result = { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+    const data = await res.json() as { features: Array<{ center: [number, number] }> };
+    if (!data.features?.length) return null;
+    const [lng, lat] = data.features[0].center;
+    const result = { lat, lng };
     geocache[key] = result;
     saveGeocache();
     return result;
@@ -260,9 +267,6 @@ async function scrapeListingsPage(page: Page): Promise<NormalizedListing[]> {
   for (const p of parsed) {
     const geo = await geocodeAddress(p.address, p.city, "TX");
     if (!geo) continue;
-    // Only delay if this was a live geocode (not cached)
-    const cached = !!geocache[`${p.address}|${p.city}|tx`.toLowerCase()];
-    if (!cached) await new Promise((r) => setTimeout(r, 1100));
     listings.push({
       externalId: p.id.replace(/\s+/g, "-").toLowerCase(),
       sourceSlug: "aln",
