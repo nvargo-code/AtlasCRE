@@ -353,10 +353,16 @@ export async function scrapeALN(browser: Browser): Promise<NormalizedListing[]> 
       if (!nextBtn) break;
 
       await Promise.all([
-        page.waitForNavigation({ waitUntil: "domcontentloaded", timeout: 15000 }).catch(() => {}),
+        page.waitForNavigation({ waitUntil: "domcontentloaded", timeout: 10000 }).catch(() => {}),
         nextBtn.click(),
       ]);
       await page.waitForTimeout(1000);
+
+      // If the page didn't actually change, we've hit the end
+      if (page.url().includes(`page=${pageNum - 1}`) || !page.url().includes(`page=${pageNum}`)) {
+        console.log(`[aln] No more pages after page ${pageNum - 1}`);
+        break;
+      }
 
       const more = await scrapeListingsPage(page);
       if (more.length === 0) break;
