@@ -83,8 +83,8 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
               {[
                 { href: "/portal/agent", label: "Agent Dashboard", icon: "grid" },
                 { href: "/portal/agent/clients", label: "Client Activity", icon: "heart" },
+                { href: "/portal/agent/tours", label: "Tour Planner", icon: "calendar" },
                 { href: "/admin-email", label: "Add Pocket Listing", icon: "folder" },
-                { href: "/dashboard", label: "Legacy Dashboard", icon: "search" },
               ].map((item) => {
                 const isActive = pathname === item.href;
                 return (
