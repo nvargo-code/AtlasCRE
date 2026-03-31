@@ -3,6 +3,7 @@ import express, { Request, Response, NextFunction } from "express";
 import { chromium } from "playwright";
 import { scrapeLoopNet } from "./scrapers/loopnet";
 import { scrapeALN, TWO_FA_PENDING_FILE } from "./scrapers/aln";
+import { scrapeRealtor } from "./scrapers/realtor";
 import { NormalizedListing } from "./types";
 import fs from "fs";
 
@@ -57,6 +58,29 @@ app.post("/scrape/loopnet", requireAuth, async (req: Request, res: Response) => 
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error("[loopnet] Error:", msg);
+    res.status(500).json({ error: msg });
+  } finally {
+    await browser.close();
+  }
+});
+
+// ── Realtor.com scrape ────────────────────────────────────────────────────────
+app.post("/scrape/realtor", requireAuth, async (req: Request, res: Response) => {
+  const market = req.body?.market as "austin" | "dfw" | undefined;
+  if (!market || !["austin", "dfw"].includes(market)) {
+    res.status(400).json({ error: "market must be 'austin' or 'dfw'" });
+    return;
+  }
+
+  console.log(`[realtor] Starting scrape for market=${market}`);
+  const launchArgs = ["--no-sandbox", "--disable-dev-shm-usage", "--disable-gpu"];
+  const browser = await chromium.launch({ headless: true, args: launchArgs });
+  try {
+    const listings = await scrapeRealtor(browser, market);
+    res.json(listings);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error("[realtor] Error:", msg);
     res.status(500).json({ error: msg });
   } finally {
     await browser.close();
