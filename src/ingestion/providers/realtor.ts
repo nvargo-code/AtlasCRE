@@ -28,6 +28,10 @@ interface RealtorProperty {
   building_size?: { size?: number; units?: string };
   lot_size?: { size?: number; units?: string };
   year_built?: number;
+  beds?: number;
+  baths?: number;
+  garage?: number;
+  stories?: number;
   agents?: Array<{
     name?: string;
     office?: { name?: string };
@@ -67,10 +71,11 @@ async function fetchRealtorPage(
     query: `query ConsumerSearchMainQuery($query: SearchHomeInput, $limit: Int, $offset: Int, $sort_type: String) {
       home_search(query: $query, limit: $limit, offset: $offset, sort_type: $sort_type) {
         results {
-          property_id listing_id prop_type
+          property_id listing_id prop_type prop_sub_type
           address { line city state_code postal_code lat lon }
           price building_size { size units } lot_size { size units }
-          year_built description rdc_web_url
+          year_built beds baths garage stories
+          description rdc_web_url
           agents { name office { name } phones { number type } email }
           photos { href }
         }
@@ -101,6 +106,28 @@ async function fetchRealtorPage(
   return results;
 }
 
+const RESIDENTIAL_PROP_TYPES = new Set([
+  "single_family", "condo", "condos", "townhomes", "townhouse",
+  "multi_family", "mobile", "manufactured", "farm", "ranch", "land",
+  "apartment", "co-op",
+]);
+
+function mapPropSubType(raw: string | undefined): string | undefined {
+  if (!raw) return undefined;
+  const map: Record<string, string> = {
+    single_family: "Single Family",
+    condo: "Condo", condos: "Condo",
+    townhomes: "Townhouse", townhouse: "Townhouse",
+    multi_family: "Multi-Family",
+    mobile: "Mobile/Manufactured", manufactured: "Mobile/Manufactured",
+    farm: "Farm/Ranch", ranch: "Farm/Ranch",
+    land: "Land",
+    apartment: "Condo",
+    "co-op": "Condo",
+  };
+  return map[raw.toLowerCase()] ?? raw;
+}
+
 function normalizeProperty(
   prop: RealtorProperty,
   market: "austin" | "dfw"
@@ -121,6 +148,8 @@ function normalizeProperty(
   const phone = agent?.phones?.find((p) => p.type === "mobile" || p.type === "work")?.number
     ?? agent?.phones?.[0]?.number;
 
+  const rawType = (prop.prop_type ?? "").toLowerCase();
+  const isResidential = RESIDENTIAL_PROP_TYPES.has(rawType);
   const propType = prop.prop_type ?? "Commercial";
   const listingType = "sale";
 
@@ -159,6 +188,13 @@ function normalizeProperty(
     imageUrl: prop.photos?.[0]?.href,
     sourceUrl: prop.rdc_web_url,
     rawData: prop as Record<string, unknown>,
+    // Residential fields
+    beds: prop.beds,
+    baths: prop.baths,
+    garageSpaces: prop.garage,
+    stories: prop.stories,
+    propSubType: mapPropSubType(prop.prop_type),
+    searchMode: isResidential ? "residential" : "commercial",
   };
 }
 

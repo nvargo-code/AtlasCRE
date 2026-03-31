@@ -3,6 +3,7 @@
 import { signIn } from "next-auth/react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -27,63 +28,113 @@ export default function LoginPage() {
     if (result?.error) {
       setError("Invalid email or password");
     } else {
-      router.push("/");
+      router.push("/dashboard");
     }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
-      <div className="w-full max-w-md p-8 bg-white dark:bg-gray-900 rounded-xl shadow-lg">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-teal-600">AtlasCRE</h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-2">
-            Commercial Real Estate Dashboard
+    <div className="min-h-screen flex">
+      {/* Left: branding panel */}
+      <div className="hidden lg:flex lg:w-1/2 bg-navy flex-col justify-between p-16">
+        <div>
+          <Link href="/" className="block h-10 w-[200px]">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/images/logos/sg-horizontal-white.png" alt="Shapiro Group" className="h-full w-auto object-contain" />
+          </Link>
+        </div>
+
+        <div>
+          <h2 className="text-3xl font-light text-white leading-tight mb-4">
+            Agent <span className="font-semibold">Dashboard</span>
+          </h2>
+          <p className="text-white/50 text-base leading-relaxed max-w-md">
+            Access the full AtlasCRE platform — map search, listing management,
+            favorites, saved searches, and admin tools.
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {error && (
-            <div className="p-3 text-sm text-red-600 bg-red-50 dark:bg-red-900/20 rounded-lg">
-              {error}
+        <p className="text-white/20 text-[11px]">
+          &copy; {new Date().getFullYear()} Shapiro Real Estate Group
+        </p>
+      </div>
+
+      {/* Right: form */}
+      <div className="flex-1 flex items-center justify-center p-6 md:p-16 bg-white">
+        <div className="w-full max-w-md">
+          {/* Mobile logo */}
+          <div className="lg:hidden mb-10">
+            <Link href="/" className="block h-10 w-[200px]">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/images/logos/sg-horizontal-black.png" alt="Shapiro Group" className="h-full w-auto object-contain" />
+            </Link>
+          </div>
+
+          <h1 className="text-2xl md:text-3xl font-light text-navy mb-2">
+            Agent <span className="font-semibold">Login</span>
+          </h1>
+          <p className="text-mid-gray text-sm mb-8">
+            Sign in to access the AtlasCRE dashboard.
+          </p>
+
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {error && (
+              <div className="bg-red-50 text-red-600 text-sm p-3 border border-red-200">
+                {error}
+              </div>
+            )}
+
+            <div>
+              <label
+                htmlFor="email"
+                className="block text-[11px] font-semibold tracking-[0.15em] uppercase text-mid-gray mb-2"
+              >
+                Email
+              </label>
+              <input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full border border-navy/15 px-4 py-3 text-sm text-navy focus:outline-none focus:border-gold transition-colors"
+                required
+              />
             </div>
-          )}
 
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-              required
-            />
+            <div>
+              <label
+                htmlFor="password"
+                className="block text-[11px] font-semibold tracking-[0.15em] uppercase text-mid-gray mb-2"
+              >
+                Password
+              </label>
+              <input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full border border-navy/15 px-4 py-3 text-sm text-navy focus:outline-none focus:border-gold transition-colors"
+                required
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="btn-primary w-full disabled:opacity-50"
+            >
+              {loading ? "Signing In..." : "Sign In"}
+            </button>
+          </form>
+
+          <div className="mt-8 pt-6 border-t border-navy/10 text-center">
+            <p className="text-mid-gray text-sm">
+              Looking for homes?{" "}
+              <Link href="/search" className="text-gold hover:text-gold-dark font-medium">
+                Search Properties
+              </Link>
+            </p>
           </div>
-
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-              required
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-2.5 bg-teal-600 hover:bg-teal-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50"
-          >
-            {loading ? "Signing in..." : "Sign In"}
-          </button>
-        </form>
+        </div>
       </div>
     </div>
   );

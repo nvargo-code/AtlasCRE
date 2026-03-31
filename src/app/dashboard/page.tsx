@@ -12,6 +12,7 @@ import { ListingList } from "@/components/ListingList";
 import { SearchBar } from "@/components/SearchBar";
 import { ExportButton } from "@/components/ExportButton";
 import { SaveSearchDialog } from "@/components/SaveSearchDialog";
+import { SuperSearchBar } from "@/components/SuperSearchBar";
 import { ListingFilters, ListingWithVariants } from "@/types";
 
 function DashboardContent() {
@@ -27,16 +28,16 @@ function DashboardContent() {
   const [selectedListing, setSelectedListing] = useState<ListingWithVariants | null>(null);
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"map" | "list" | "split">("split");
+  const [totalCount, setTotalCount] = useState(0);
+  const [zillowCount, setZillowCount] = useState<number | null>(null);
+  const [zillowLoading, setZillowLoading] = useState(false);
   const boundsRef = useRef<ListingFilters["bounds"]>(undefined);
   const filtersRef = useRef(filters);
   filtersRef.current = filters;
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const initialLoadDone = useRef(false);
 
-  // Redirect if not authenticated
-  useEffect(() => {
-    if (status === "unauthenticated") router.push("/login");
-  }, [status, router]);
+  // Auth redirect handled by middleware
 
   // Load available sources
   useEffect(() => {
@@ -48,6 +49,8 @@ function DashboardContent() {
   // Sync filters from URL on mount (once)
   useEffect(() => {
     const f: ListingFilters = {};
+    const sm = searchParams.get("searchMode");
+    if (sm === "residential") f.searchMode = "residential";
     const market = searchParams.get("market");
     if (market === "austin" || market === "dfw") f.market = market;
     const pt = searchParams.get("propertyType");
@@ -63,6 +66,7 @@ function DashboardContent() {
   // Sync filters to URL
   useEffect(() => {
     const params = new URLSearchParams();
+    if (filters.searchMode) params.set("searchMode", filters.searchMode);
     if (filters.market) params.set("market", filters.market);
     if (filters.propertyType?.length) params.set("propertyType", filters.propertyType.join(","));
     if (filters.listingType?.length) params.set("listingType", filters.listingType.join(","));
@@ -71,7 +75,12 @@ function DashboardContent() {
     if (filters.priceMax) params.set("priceMax", filters.priceMax.toString());
     if (filters.sfMin) params.set("sfMin", filters.sfMin.toString());
     if (filters.sfMax) params.set("sfMax", filters.sfMax.toString());
-    const url = params.toString() ? `?${params.toString()}` : "/";
+    if (filters.bedsMin) params.set("bedsMin", filters.bedsMin.toString());
+    if (filters.bedsMax) params.set("bedsMax", filters.bedsMax.toString());
+    if (filters.bathsMin) params.set("bathsMin", filters.bathsMin.toString());
+    if (filters.bathsMax) params.set("bathsMax", filters.bathsMax.toString());
+    if (filters.propSubType?.length) params.set("propSubType", filters.propSubType.join(","));
+    const url = params.toString() ? `/dashboard?${params.toString()}` : "/dashboard";
     router.replace(url, { scroll: false });
   }, [filters, router]);
 
@@ -81,6 +90,7 @@ function DashboardContent() {
 
     const f = filtersRef.current;
     const params = new URLSearchParams();
+    if (f.searchMode) params.set("searchMode", f.searchMode);
     if (f.market) params.set("market", f.market);
     if (f.propertyType?.length) params.set("propertyType", f.propertyType.join(","));
     if (f.listingType?.length) params.set("listingType", f.listingType.join(","));
@@ -91,6 +101,11 @@ function DashboardContent() {
     if (f.query) params.set("q", f.query);
     if (f.brokerCompany) params.set("brokerCompany", f.brokerCompany);
     if (f.sources?.length) params.set("sources", f.sources.join(","));
+    if (f.bedsMin) params.set("bedsMin", f.bedsMin.toString());
+    if (f.bedsMax) params.set("bedsMax", f.bedsMax.toString());
+    if (f.bathsMin) params.set("bathsMin", f.bathsMin.toString());
+    if (f.bathsMax) params.set("bathsMax", f.bathsMax.toString());
+    if (f.propSubType?.length) params.set("propSubType", f.propSubType.join(","));
 
     const bounds = boundsRef.current;
     if (bounds) {
@@ -117,6 +132,33 @@ function DashboardContent() {
     if (listRes.ok) {
       const data = await listRes.json();
       setListings(data.listings || []);
+      setTotalCount(data.pagination?.total ?? 0);
+    }
+
+    // Fetch Zillow count when in residential mode and have a search query (zip/city)
+    if (f.searchMode === "residential" && f.query) {
+      setZillowLoading(true);
+      try {
+        const zParams = new URLSearchParams({ location: f.query });
+        if (f.priceMin) zParams.set("priceMin", f.priceMin.toString());
+        if (f.priceMax) zParams.set("priceMax", f.priceMax.toString());
+        if (f.bedsMin) zParams.set("bedsMin", f.bedsMin.toString());
+        if (f.bathsMin) zParams.set("bathsMin", f.bathsMin.toString());
+        const zRes = await fetch(`/api/zillow-count?${zParams}`);
+        if (zRes.ok) {
+          const zData = await zRes.json();
+          setZillowCount(zData.count);
+        } else {
+          setZillowCount(null);
+        }
+      } catch {
+        setZillowCount(null);
+      } finally {
+        setZillowLoading(false);
+      }
+    } else {
+      setZillowCount(null);
+      setZillowLoading(false);
     }
   }, [status]);
 
@@ -255,6 +297,15 @@ function DashboardContent() {
 
       <FilterChips filters={filters} onChange={setFilters} />
 
+      {/* SuperSearch comparison bar */}
+      {filters.searchMode === "residential" && (
+        <SuperSearchBar
+          superSearchCount={totalCount}
+          zillowCount={zillowCount}
+          loading={zillowLoading}
+        />
+      )}
+
       {/* Main content */}
       <div className="flex-1 flex overflow-hidden relative">
         <FilterPanel
@@ -289,6 +340,10 @@ function DashboardContent() {
                 priceUnit: l.priceUnit,
                 buildingSf: l.buildingSf,
                 status: l.status,
+                beds: l.beds,
+                baths: l.baths,
+                propSubType: l.propSubType,
+                searchMode: l.searchMode,
               }))}
               onSelect={handleMarkerClick}
               selectedId={selectedListing?.id}

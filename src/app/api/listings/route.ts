@@ -5,10 +5,9 @@ import { prisma } from "@/lib/prisma";
 import { parseFiltersFromParams, buildListingWhere } from "@/lib/filters";
 
 export async function GET(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  // Allow public access for search — auth is optional
+  // (Agent dashboard also uses this endpoint when authenticated)
+  const _session = await getServerSession(authOptions);
 
   const params = req.nextUrl.searchParams;
   const filters = parseFiltersFromParams(params);
@@ -36,6 +35,10 @@ export async function GET(req: NextRequest) {
         priceUnit: true,
         buildingSf: true,
         status: true,
+        beds: true,
+        baths: true,
+        propSubType: true,
+        searchMode: true,
       },
       take: 2000,
     });
@@ -58,6 +61,10 @@ export async function GET(req: NextRequest) {
           priceUnit: l.priceUnit,
           buildingSf: l.buildingSf,
           status: l.status,
+          beds: l.beds,
+          baths: l.baths,
+          propSubType: l.propSubType,
+          searchMode: l.searchMode,
         },
       })),
     };

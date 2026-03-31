@@ -75,14 +75,31 @@ export function ListingDetail({ listing, onClose, onToggleFavorite }: ListingDet
         </div>
 
         <div className="grid grid-cols-2 gap-3">
-          <InfoItem label="Property Type" value={listing.propertyType} />
-          <InfoItem label="Listing Type" value={listing.listingType} />
-          <InfoItem label="Building SF" value={listing.buildingSf?.toLocaleString() ?? "N/A"} />
-          <InfoItem label="Lot Size" value={listing.lotSizeAcres ? `${listing.lotSizeAcres} ac` : "N/A"} />
-          <InfoItem label="Year Built" value={listing.yearBuilt?.toString() ?? "N/A"} />
-          <InfoItem label="Market" value={listing.market === "austin" ? "Austin" : "DFW"} />
-          <InfoItem label="Broker" value={listing.brokerName ?? "N/A"} />
-          <InfoItem label="Company" value={listing.brokerCompany ?? "N/A"} />
+          {listing.searchMode === "residential" ? (
+            <>
+              <InfoItem label="Type" value={listing.propSubType ?? listing.propertyType} />
+              <InfoItem label="Listing Type" value={listing.listingType} />
+              <InfoItem label="Beds" value={listing.beds?.toString() ?? "N/A"} />
+              <InfoItem label="Baths" value={listing.baths?.toString() ?? "N/A"} />
+              <InfoItem label="Garage" value={listing.garageSpaces?.toString() ?? "N/A"} />
+              <InfoItem label="Stories" value={listing.stories?.toString() ?? "N/A"} />
+              <InfoItem label="Lot Size" value={listing.lotSizeAcres ? `${listing.lotSizeAcres} ac` : "N/A"} />
+              <InfoItem label="Year Built" value={listing.yearBuilt?.toString() ?? "N/A"} />
+              <InfoItem label="Market" value={listing.market === "austin" ? "Austin" : "DFW"} />
+              <InfoItem label="Broker" value={listing.brokerName ?? "N/A"} />
+            </>
+          ) : (
+            <>
+              <InfoItem label="Property Type" value={listing.propertyType} />
+              <InfoItem label="Listing Type" value={listing.listingType} />
+              <InfoItem label="Building SF" value={listing.buildingSf?.toLocaleString() ?? "N/A"} />
+              <InfoItem label="Lot Size" value={listing.lotSizeAcres ? `${listing.lotSizeAcres} ac` : "N/A"} />
+              <InfoItem label="Year Built" value={listing.yearBuilt?.toString() ?? "N/A"} />
+              <InfoItem label="Market" value={listing.market === "austin" ? "Austin" : "DFW"} />
+              <InfoItem label="Broker" value={listing.brokerName ?? "N/A"} />
+              <InfoItem label="Company" value={listing.brokerCompany ?? "N/A"} />
+            </>
+          )}
         </div>
 
         {listing.description && (

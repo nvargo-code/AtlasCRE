@@ -62,6 +62,38 @@ export function FilterChips({ filters, onChange }: FilterChipsProps) {
     });
   }
 
+  if (filters.searchMode === "residential") {
+    chips.push({
+      label: "Residential",
+      onRemove: () => onChange({ ...filters, searchMode: undefined, bedsMin: undefined, bedsMax: undefined, bathsMin: undefined, bathsMax: undefined, propSubType: undefined }),
+    });
+  }
+
+  if (filters.bedsMin || filters.bedsMax) {
+    const min = filters.bedsMin ?? "any";
+    const max = filters.bedsMax ?? "any";
+    chips.push({
+      label: `Beds: ${min}–${max}`,
+      onRemove: () => onChange({ ...filters, bedsMin: undefined, bedsMax: undefined }),
+    });
+  }
+
+  if (filters.bathsMin || filters.bathsMax) {
+    const min = filters.bathsMin ?? "any";
+    const max = filters.bathsMax ?? "any";
+    chips.push({
+      label: `Baths: ${min}–${max}`,
+      onRemove: () => onChange({ ...filters, bathsMin: undefined, bathsMax: undefined }),
+    });
+  }
+
+  filters.propSubType?.forEach((pst) => {
+    chips.push({
+      label: pst,
+      onRemove: () => onChange({ ...filters, propSubType: filters.propSubType?.filter((t) => t !== pst) }),
+    });
+  });
+
   if (filters.query) {
     chips.push({
       label: `"${filters.query}"`,

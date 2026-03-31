@@ -10,6 +10,10 @@ interface ListingItem {
   priceUnit: string | null;
   buildingSf: number | null;
   status: string;
+  beds?: number | null;
+  baths?: number | null;
+  propSubType?: string | null;
+  searchMode?: string;
 }
 
 interface ListingListProps {
@@ -59,15 +63,26 @@ export function ListingList({ listings, onSelect, selectedId }: ListingListProps
           </div>
           <div className="flex gap-2 mt-1.5">
             <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400">
-              {l.propertyType}
+              {l.searchMode === "residential" ? (l.propSubType ?? l.propertyType) : l.propertyType}
             </span>
             <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400">
               {l.listingType}
             </span>
-            {l.buildingSf && (
-              <span className="text-xs text-gray-500 dark:text-gray-400">
-                {l.buildingSf.toLocaleString()} SF
-              </span>
+            {l.searchMode === "residential" ? (
+              <>
+                {l.beds != null && (
+                  <span className="text-xs text-gray-500 dark:text-gray-400">{l.beds} bd</span>
+                )}
+                {l.baths != null && (
+                  <span className="text-xs text-gray-500 dark:text-gray-400">{l.baths} ba</span>
+                )}
+              </>
+            ) : (
+              l.buildingSf && (
+                <span className="text-xs text-gray-500 dark:text-gray-400">
+                  {l.buildingSf.toLocaleString()} SF
+                </span>
+              )
             )}
           </div>
         </button>
