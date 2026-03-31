@@ -146,88 +146,101 @@ async function geocodeAddress(address: string, city: string, state: string): Pro
 
 // ── Page scraper ──────────────────────────────────────────────────────────────
 
+interface RawCard {
+  addressText: string;
+  priceText: string;
+  sqftText: string;
+  typeText: string;
+  brokerText: string;
+  img: string;
+  link: string;
+}
+
 async function scrapeListingsPage(page: Page): Promise<NormalizedListing[]> {
-  const listings: NormalizedListing[] = [];
-  await page.waitForTimeout(3000);
+  await page.waitForTimeout(1500);
   const url = page.url();
   console.log("[aln] Scraping page:", url);
 
-  const cardSelector = [
-    ".listing-card", ".property-card", ".listing-item", ".property-item",
-    "[class*='listing']", "[class*='property']", "article",
-  ].join(", ");
+  // Batch extract all card data in one browser call
+  const rawCards: RawCard[] = await page.$$eval(
+    ".listing-card, .property-card, .listing-item, .property-item, [class*='listing'], [class*='property'], article",
+    (els) => els.map((el) => {
+      const t = (sel: string) => el.querySelector(sel)?.textContent?.trim() ?? "";
+      const a = (sel: string, attr: string) => (el.querySelector(sel) as HTMLElement | null)?.getAttribute(attr) ?? "";
+      return {
+        addressText: t(".address, [class*='address'], [data-field='address']") || t("h2, h3, h4"),
+        priceText:   t(".price, [class*='price'], [data-field='price']"),
+        sqftText:    t(".sqft, [class*='sqft'], [class*='size'], [data-field='sqft']"),
+        typeText:    t(".type, [class*='type'], [class*='property-type']"),
+        brokerText:  t(".broker, [class*='broker'], [class*='agent']"),
+        img:         a("img", "src"),
+        link:        a("a", "href"),
+      };
+    })
+  ).catch(() => [] as RawCard[]);
 
-  const cards = await page.$$(cardSelector);
-  console.log(`[aln] Found ${cards.length} potential listing elements`);
+  console.log(`[aln] Found ${rawCards.length} potential listing elements`);
 
-  for (const card of cards) {
-    try {
-      const getText = async (sel: string) =>
-        (await card.$eval(sel, (el) => el.textContent?.trim() ?? "").catch(() => ""));
-      const getAttr = async (sel: string, attr: string) =>
-        (await card.$eval(sel, (el, a) => el.getAttribute(a) ?? "", attr).catch(() => ""));
-
-      const addressText = await getText(".address, [class*='address'], [data-field='address']")
-        || await getText("h2, h3, h4");
-      if (!addressText) continue;
-
-      const priceText = await getText(".price, [class*='price'], [data-field='price']");
-      const sqftText = await getText(".sqft, [class*='sqft'], [class*='size'], [data-field='sqft']");
-      const typeText = await getText(".type, [class*='type'], [class*='property-type']");
-      const brokerText = await getText(".broker, [class*='broker'], [class*='agent']");
-      const img = await getAttr("img", "src");
-      const link = await getAttr("a", "href");
-
-      const parts = addressText.split(",").map((s: string) => s.trim());
-      const address = parts[0] ?? addressText;
+  // Parse card data (sync, no I/O)
+  const parsed = rawCards
+    .filter((c) => !!c.addressText)
+    .map((c) => {
+      const parts = c.addressText.split(",").map((s) => s.trim());
+      const address = parts[0] ?? c.addressText;
       const city = parts[1] ?? "Austin";
 
       let priceAmount: number | undefined;
-      if (priceText) {
-        const cleaned = priceText.replace(/[^0-9.]/g, "");
-        const val = parseFloat(cleaned);
+      if (c.priceText) {
+        const val = parseFloat(c.priceText.replace(/[^0-9.]/g, ""));
         if (!isNaN(val)) {
-          priceAmount = priceText.includes("M") ? val * 1_000_000
-            : priceText.includes("K") ? val * 1_000
+          priceAmount = c.priceText.includes("M") ? val * 1_000_000
+            : c.priceText.includes("K") ? val * 1_000
             : val;
         }
       }
 
       let buildingSf: number | undefined;
-      if (sqftText) {
-        const match = sqftText.match(/([\d,]+)/);
-        if (match) buildingSf = parseInt(match[1].replace(/,/g, ""));
-      }
+      const sfMatch = c.sqftText.match(/([\d,]+)/);
+      if (sfMatch) buildingSf = parseInt(sfMatch[1].replace(/,/g, ""));
 
-      const geo = await geocodeAddress(address, city, "TX");
-      if (!geo) continue;
-      await new Promise((r) => setTimeout(r, 250));
-
-      const sourceUrl = link?.startsWith("http") ? link : link ? `${ALN_BASE}${link}` : undefined;
+      const sourceUrl = c.link?.startsWith("http") ? c.link : c.link ? `${ALN_BASE}${c.link}` : undefined;
       const id = sourceUrl ? sourceUrl.split("/").filter(Boolean).pop() ?? address : address;
 
+      return { address, city, priceAmount, buildingSf, sourceUrl, id, c };
+    });
+
+  // Geocode in parallel batches of 5 (Nominatim rate limit ~1 req/s per IP)
+  const BATCH = 5;
+  const listings: NormalizedListing[] = [];
+  for (let i = 0; i < parsed.length; i += BATCH) {
+    const batch = parsed.slice(i, i + BATCH);
+    const geos = await Promise.all(batch.map((p) => geocodeAddress(p.address, p.city, "TX")));
+    for (let j = 0; j < batch.length; j++) {
+      const p = batch[j];
+      const geo = geos[j];
+      if (!geo) continue;
       listings.push({
-        externalId: id.replace(/\s+/g, "-").toLowerCase(),
+        externalId: p.id.replace(/\s+/g, "-").toLowerCase(),
         sourceSlug: "aln",
-        address,
-        city,
+        address: p.address,
+        city: p.city,
         state: "TX",
         lat: geo.lat,
         lng: geo.lng,
         market: "austin",
-        propertyType: typeText || "Residential",
+        propertyType: p.c.typeText || "Residential",
         listingType: "sale",
-        buildingSf,
-        priceAmount,
+        buildingSf: p.buildingSf,
+        priceAmount: p.priceAmount,
         priceUnit: "total",
-        brokerName: brokerText || undefined,
-        imageUrl: img || undefined,
-        sourceUrl,
-        rawData: { addressText, priceText, sqftText, typeText, brokerText },
+        brokerName: p.c.brokerText || undefined,
+        imageUrl: p.c.img || undefined,
+        sourceUrl: p.sourceUrl,
+        rawData: { addressText: p.c.addressText, priceText: p.c.priceText, sqftText: p.c.sqftText, typeText: p.c.typeText, brokerText: p.c.brokerText },
       });
-    } catch (err) {
-      console.warn("[aln] Error parsing card:", err);
     }
+    // Brief pause between batches to respect Nominatim rate limit
+    if (i + BATCH < parsed.length) await new Promise((r) => setTimeout(r, 300));
   }
 
   return listings;
@@ -297,7 +310,7 @@ export async function scrapeALN(browser: Browser): Promise<NormalizedListing[]> 
         page.waitForNavigation({ waitUntil: "domcontentloaded", timeout: 15000 }).catch(() => {}),
         nextBtn.click(),
       ]);
-      await page.waitForTimeout(2000);
+      await page.waitForTimeout(1000);
 
       const more = await scrapeListingsPage(page);
       if (more.length === 0) break;
