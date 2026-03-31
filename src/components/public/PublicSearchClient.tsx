@@ -106,6 +106,8 @@ function SearchContent() {
     if (sfMin) f.sfMin = Number(sfMin);
     const pst = searchParams.get("propSubType");
     if (pst) f.propSubType = pst.split(",") as ListingFilters["propSubType"];
+    const yb = searchParams.get("yearBuiltMin");
+    if (yb) f.yearBuiltMin = Number(yb);
     setFilters(f);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -191,6 +193,7 @@ function SearchContent() {
     if (filters.propertyType?.length) params.set("propertyType", filters.propertyType.join(","));
     if (filters.listingType?.length) params.set("listingType", filters.listingType.join(","));
     if (filters.sfMin) params.set("sfMin", filters.sfMin.toString());
+    if (filters.yearBuiltMin) params.set("yearBuiltMin", filters.yearBuiltMin.toString());
     if (filters.propSubType?.length) params.set("propSubType", filters.propSubType.join(","));
     const url = params.toString() ? `/search?${params.toString()}` : "/search";
     router.replace(url, { scroll: false });
@@ -212,6 +215,7 @@ function SearchContent() {
     if (f.bathsMin) params.set("bathsMin", f.bathsMin.toString());
     if (f.propSubType?.length) params.set("propSubType", f.propSubType.join(","));
     if (f.sfMin) params.set("sfMin", f.sfMin.toString());
+    if (f.yearBuiltMin) params.set("yearBuiltMin", f.yearBuiltMin.toString());
     const bounds = boundsRef.current;
     if (bounds) {
       params.set("north", bounds.north.toString());
@@ -395,7 +399,7 @@ function SearchContent() {
                 </select>
               </>
             )}
-            {/* Market selector */}
+            {/* Shared filters */}
             <select
               className="bg-white/5 border border-white/20 text-white/70 text-[12px] tracking-wider px-4 py-2 focus:outline-none focus:border-gold"
               onChange={(e) => setFilters({ ...filters, market: e.target.value as "austin" | "dfw" | undefined || undefined })}
@@ -404,6 +408,30 @@ function SearchContent() {
               <option value="austin">Austin</option>
               <option value="dfw">DFW</option>
             </select>
+            <select
+              className="bg-white/5 border border-white/20 text-white/70 text-[12px] tracking-wider px-4 py-2 focus:outline-none focus:border-gold"
+              onChange={(e) => setFilters({ ...filters, yearBuiltMin: e.target.value ? Number(e.target.value) : undefined })}
+            >
+              <option value="">Year Built</option>
+              <option value="2020">2020+</option>
+              <option value="2010">2010+</option>
+              <option value="2000">2000+</option>
+              <option value="1990">1990+</option>
+              <option value="1980">1980+</option>
+            </select>
+            {mode === "residential" && (
+              <select
+                className="bg-white/5 border border-white/20 text-white/70 text-[12px] tracking-wider px-4 py-2 focus:outline-none focus:border-gold"
+                onChange={(e) => setFilters({ ...filters, sfMin: e.target.value ? Number(e.target.value) : undefined })}
+              >
+                <option value="">Min Sqft</option>
+                <option value="1000">1,000+ SF</option>
+                <option value="1500">1,500+ SF</option>
+                <option value="2000">2,000+ SF</option>
+                <option value="2500">2,500+ SF</option>
+                <option value="3000">3,000+ SF</option>
+              </select>
+            )}
           </div>
         </div>
       </div>

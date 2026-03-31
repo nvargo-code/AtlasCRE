@@ -60,6 +60,13 @@ export function SearchFilterChips({ filters, onChange }: SearchFilterChipsProps)
     });
   }
 
+  if (filters.yearBuiltMin) {
+    chips.push({
+      label: `Built ${filters.yearBuiltMin}+`,
+      onRemove: () => onChange({ ...filters, yearBuiltMin: undefined }),
+    });
+  }
+
   if (filters.propertyType?.length) {
     filters.propertyType.forEach((pt) => {
       chips.push({

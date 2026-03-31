@@ -45,6 +45,36 @@ export default async function ListingDetailPage({ params }: Props) {
 
   if (!listing) notFound();
 
+  // Find similar listings (same city, similar price, same search mode)
+  let similarListings: { id: string; address: string; city: string; priceAmount: number | null; beds: number | null; baths: number | null; buildingSf: number | null; imageUrl: string | null; listingType: string; propSubType: string | null }[] = [];
+  try {
+    const priceAmount = listing.priceAmount ? Number(listing.priceAmount) : null;
+    const raw = await prisma.listing.findMany({
+      where: {
+        id: { not: listing.id },
+        status: "active",
+        searchMode: listing.searchMode,
+        city: listing.city,
+        ...(priceAmount && {
+          priceAmount: {
+            gte: priceAmount * 0.7,
+            lte: priceAmount * 1.3,
+          },
+        }),
+      },
+      orderBy: { updatedAt: "desc" },
+      take: 4,
+      select: {
+        id: true, address: true, city: true, priceAmount: true,
+        beds: true, baths: true, buildingSf: true, imageUrl: true,
+        listingType: true, propSubType: true,
+      },
+    });
+    similarListings = raw.map((l) => ({ ...l, priceAmount: l.priceAmount ? Number(l.priceAmount) : null }));
+  } catch {
+    // Non-critical
+  }
+
   const serialized = {
     ...listing,
     priceAmount: listing.priceAmount ? Number(listing.priceAmount) : null,
@@ -122,7 +152,7 @@ export default async function ListingDetailPage({ params }: Props) {
         </div>
       </div>
 
-      <ListingDetailClient listing={serialized} />
+      <ListingDetailClient listing={serialized} similarListings={similarListings} />
     </>
   );
 }
