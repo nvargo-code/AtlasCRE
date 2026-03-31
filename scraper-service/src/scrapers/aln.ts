@@ -127,18 +127,46 @@ async function login(page: Page): Promise<void> {
   }
 }
 
+// ── Geocoding cache ───────────────────────────────────────────────────────────
+
+const GEOCACHE_FILE = "/opt/atlas-scraper/geocache.json";
+let geocache: Record<string, { lat: number; lng: number }> = {};
+
+function loadGeocache(): void {
+  try {
+    const fs = require("fs");
+    if (fs.existsSync(GEOCACHE_FILE)) {
+      geocache = JSON.parse(fs.readFileSync(GEOCACHE_FILE, "utf8"));
+      console.log(`[aln] Loaded geocache: ${Object.keys(geocache).length} entries`);
+    }
+  } catch {}
+}
+
+function saveGeocache(): void {
+  try {
+    const fs = require("fs");
+    fs.writeFileSync(GEOCACHE_FILE, JSON.stringify(geocache));
+  } catch {}
+}
+
 // ── Geocoding ─────────────────────────────────────────────────────────────────
 
 async function geocodeAddress(address: string, city: string, state: string): Promise<{ lat: number; lng: number } | null> {
+  const key = `${address}|${city}|${state}`.toLowerCase();
+  if (geocache[key]) return geocache[key];
+
   try {
     const q = encodeURIComponent(`${address}, ${city}, ${state}`);
     const res = await fetch(
       `https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=1`,
-      { headers: { "User-Agent": "AtlasCRE/1.0 (internal)" }, signal: AbortSignal.timeout(5000) }
+      { headers: { "User-Agent": "AtlasCRE/1.0 (internal)" }, signal: AbortSignal.timeout(10000) }
     );
     const data = await res.json() as Array<{ lat: string; lon: string }>;
     if (!data.length) return null;
-    return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+    const result = { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+    geocache[key] = result;
+    saveGeocache();
+    return result;
   } catch {
     return null;
   }
@@ -209,38 +237,33 @@ async function scrapeListingsPage(page: Page): Promise<NormalizedListing[]> {
       return { address, city, priceAmount, buildingSf, sourceUrl, id, c };
     });
 
-  // Geocode in parallel batches of 5 (Nominatim rate limit ~1 req/s per IP)
-  const BATCH = 5;
+  // Geocode sequentially — Nominatim allows 1 req/s; cache means most are instant
   const listings: NormalizedListing[] = [];
-  for (let i = 0; i < parsed.length; i += BATCH) {
-    const batch = parsed.slice(i, i + BATCH);
-    const geos = await Promise.all(batch.map((p) => geocodeAddress(p.address, p.city, "TX")));
-    for (let j = 0; j < batch.length; j++) {
-      const p = batch[j];
-      const geo = geos[j];
-      if (!geo) continue;
-      listings.push({
-        externalId: p.id.replace(/\s+/g, "-").toLowerCase(),
-        sourceSlug: "aln",
-        address: p.address,
-        city: p.city,
-        state: "TX",
-        lat: geo.lat,
-        lng: geo.lng,
-        market: "austin",
-        propertyType: p.c.typeText || "Residential",
-        listingType: "sale",
-        buildingSf: p.buildingSf,
-        priceAmount: p.priceAmount,
-        priceUnit: "total",
-        brokerName: p.c.brokerText || undefined,
-        imageUrl: p.c.img || undefined,
-        sourceUrl: p.sourceUrl,
-        rawData: { addressText: p.c.addressText, priceText: p.c.priceText, sqftText: p.c.sqftText, typeText: p.c.typeText, brokerText: p.c.brokerText },
-      });
-    }
-    // Brief pause between batches to respect Nominatim rate limit
-    if (i + BATCH < parsed.length) await new Promise((r) => setTimeout(r, 300));
+  for (const p of parsed) {
+    const geo = await geocodeAddress(p.address, p.city, "TX");
+    if (!geo) continue;
+    // Only delay if this was a live geocode (not cached)
+    const cached = !!geocache[`${p.address}|${p.city}|tx`.toLowerCase()];
+    if (!cached) await new Promise((r) => setTimeout(r, 1100));
+    listings.push({
+      externalId: p.id.replace(/\s+/g, "-").toLowerCase(),
+      sourceSlug: "aln",
+      address: p.address,
+      city: p.city,
+      state: "TX",
+      lat: geo.lat,
+      lng: geo.lng,
+      market: "austin",
+      propertyType: p.c.typeText || "Residential",
+      listingType: "sale",
+      buildingSf: p.buildingSf,
+      priceAmount: p.priceAmount,
+      priceUnit: "total",
+      brokerName: p.c.brokerText || undefined,
+      imageUrl: p.c.img || undefined,
+      sourceUrl: p.sourceUrl,
+      rawData: { addressText: p.c.addressText, priceText: p.c.priceText, sqftText: p.c.sqftText, typeText: p.c.typeText, brokerText: p.c.brokerText },
+    });
   }
 
   return listings;
@@ -249,6 +272,7 @@ async function scrapeListingsPage(page: Page): Promise<NormalizedListing[]> {
 // ── Main export ───────────────────────────────────────────────────────────────
 
 export async function scrapeALN(browser: Browser): Promise<NormalizedListing[]> {
+  loadGeocache();
   const context = await browser.newContext({
     userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
     viewport: { width: 1280, height: 900 },
