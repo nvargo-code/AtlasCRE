@@ -86,5 +86,33 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ activity: serialized });
   }
 
-  return NextResponse.json({ error: "listingId or clientId required" }, { status: 400 });
+  // All recent activity (agent dashboard)
+  const allParam = req.nextUrl.searchParams.get("all");
+  if (allParam) {
+    const user = session.user as { role?: string };
+    if (user.role !== "ADMIN" && user.role !== "AGENT") {
+      return NextResponse.json({ error: "Agent access required" }, { status: 403 });
+    }
+
+    const activity = await prisma.listingActivity.findMany({
+      include: {
+        listing: { select: { id: true, address: true, city: true, priceAmount: true, imageUrl: true } },
+        user: { select: { id: true, name: true, email: true } },
+      },
+      orderBy: { createdAt: "desc" },
+      take: 100,
+    });
+
+    const serialized = activity.map((a) => ({
+      ...a,
+      listing: a.listing ? {
+        ...a.listing,
+        priceAmount: a.listing.priceAmount ? Number(a.listing.priceAmount) : null,
+      } : null,
+    }));
+
+    return NextResponse.json({ activity: serialized });
+  }
+
+  return NextResponse.json({ error: "listingId, clientId, or all required" }, { status: 400 });
 }
