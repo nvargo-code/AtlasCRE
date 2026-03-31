@@ -347,25 +347,28 @@ export async function scrapeALN(browser: Browser): Promise<NormalizedListing[]> 
     listings.push(...pageListings);
     savePartial();
 
+    // Navigate directly by URL — avoids hanging on next-button click/navigation
     let pageNum = 2;
     while (pageNum <= 10) {
-      const nextBtn = await page.$("[aria-label='Next'], .next, [rel='next'], a[href*='page=" + pageNum + "']");
-      if (!nextBtn) break;
+      const pageUrl = `${ALN_BASE}/listings?page=${pageNum}`;
+      try {
+        await page.goto(pageUrl, { waitUntil: "domcontentloaded", timeout: 10000 });
+      } catch {
+        console.log(`[aln] Page ${pageNum} load timed out — stopping`);
+        break;
+      }
 
-      await Promise.all([
-        page.waitForNavigation({ waitUntil: "domcontentloaded", timeout: 10000 }).catch(() => {}),
-        nextBtn.click(),
-      ]);
-      await page.waitForTimeout(1000);
-
-      // If the page didn't actually change, we've hit the end
-      if (page.url().includes(`page=${pageNum - 1}`) || !page.url().includes(`page=${pageNum}`)) {
+      // If redirected away from the page URL, we've hit the end
+      if (!page.url().includes(`page=${pageNum}`)) {
         console.log(`[aln] No more pages after page ${pageNum - 1}`);
         break;
       }
 
       const more = await scrapeListingsPage(page);
-      if (more.length === 0) break;
+      if (more.length === 0) {
+        console.log(`[aln] Page ${pageNum} returned 0 listings — stopping`);
+        break;
+      }
       listings.push(...more);
       savePartial();
       pageNum++;
