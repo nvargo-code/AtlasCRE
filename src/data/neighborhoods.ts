@@ -288,4 +288,156 @@ export const NEIGHBORHOODS: NeighborhoodData[] = [
     ],
     avatarScores: { "tech-founder": 3, "biohacker-exec": 5, "young-family": 5, investor: 2 },
   },
+
+  {
+    slug: "east-side",
+    name: "East Austin",
+    zips: ["78702", "78721"],
+    searchQuery: "78702",
+    heroTagline: "Where Austin reinvents itself every year. Creative, fast-moving, and full of upside.",
+    overview:
+      "East Austin is the city's most dynamic neighborhood — a former industrial corridor that has transformed into a hotbed of craft breweries, art galleries, restaurants, tech offices, and new residential development. The change has been dramatic and fast: streets that were warehouses a decade ago now have $1M+ modern homes next to original bungalows, taquerias next to tasting menus, and food trucks next to venture-backed startups. The energy here is tangible. East Austin attracts people who want to be early to the next thing — and in Austin real estate, this is the next thing.",
+    vibe: "Creative, entrepreneurial, diverse, rapidly evolving. The neighborhood still has grit and character, but the polish is arriving fast. Skews younger, tech-adjacent, and culturally engaged. Not suburban — this is urban Austin.",
+    whyEntrepreneurs:
+      "East Austin has become Austin's second tech hub. Companies like Indeed and Google have offices east of I-35, and the creative density attracts founders who find downtown too corporate and 78704 too competitive. Rents are lower, the food scene is arguably Austin's best, and the coworking options (WeWork East, Vessel Coworking) are growing. This is where Austin's next generation of companies are being built — in converted warehouses and live/work lofts.",
+    whyFamilies:
+      "East Austin is family-friendly in spots but not uniformly. Mueller (78723, adjacent) is the family epicenter — master-planned, walkable, great parks. In 78702, families tend to cluster in the quieter residential streets south of 7th Street. Schools in AISD's eastern zone have been improving, and several charter options (KIPP, Harmony) are strong. The diversity of the neighborhood is a genuine draw for families who want their kids to grow up in a culturally rich environment.",
+    whyHealth:
+      "East Austin's fitness scene is young, scrappy, and growing. CrossFit East Austin is a strong box. Austin Bouldering Project — the world's largest climbing gym — is a destination facility. The trail along the east side of Lady Bird Lake connects to the full loop. Several yoga studios and boutique gyms. The food scene supports clean eating with places like Citizen Eatery (plant-based) and Sour Duck Market. Less polished than Westlake's wellness scene, but more authentic.",
+    whyInvestors:
+      "East Austin is the single best investment market in Austin right now. Appreciation has been explosive — properties bought in 2015 have 2-3x'd. The development pipeline is massive (East Riverside corridor, South Central Waterfront planned). ADU-friendly zoning on many lots. Strong rental demand from young professionals. Multi-family opportunities exist. STR regulations are evolving — check current rules. The risk: you're paying for anticipated future value, not current fundamentals. But the trajectory is clear.",
+    medianPrice: "$625K",
+    priceRange: "$350K (condo) — $2M+ (new build)",
+    avgSqft: "1,400",
+    walkScore: 78,
+    commuteDowntown: "5-10 min",
+    schools: [
+      { name: "Zavala Elementary", type: "elementary", rating: "6/10", district: "Austin ISD", notes: "Dual-language program, improving rapidly" },
+      { name: "Blackshear Elementary", type: "elementary", rating: "6/10", district: "Austin ISD", notes: "Fine arts magnet, strong community" },
+      { name: "Martin Middle School", type: "middle", rating: "5/10", district: "Austin ISD" },
+      { name: "KIPP Austin Obra", type: "charter", rating: "8/10", district: "KIPP", notes: "High-performing charter, strong for college prep" },
+      { name: "Eastside Memorial High", type: "high", rating: "5/10", district: "Austin ISD", notes: "Improving — new programs and investment" },
+    ],
+    fitness: [
+      { name: "Austin Bouldering Project", type: "gym", description: "32,000 sq ft of climbing walls, fitness area, yoga studio, and a community-driven atmosphere that feels more like a social club than a gym. World's largest bouldering gym. Date night, networking event, and workout in one.", address: "979 Springdale Rd", avatarFit: ["tech-founder", "biohacker-exec"] },
+      { name: "CrossFit East Austin", type: "gym", description: "Solid CrossFit box with a welcoming community. 5:30am crew is small but committed. Good coaching, unpretentious.", avatarFit: ["biohacker-exec"] },
+      { name: "Practice Yoga Austin", type: "gym", description: "Community-focused yoga studio. Various styles from restorative to power. The teachers here are among Austin's best.", address: "East Cesar Chavez", avatarFit: ["biohacker-exec"] },
+      { name: "Roy G Guerrero Park Trail", type: "outdoor", description: "Riverside trail running with Colorado River views. Less crowded than Lady Bird Lake trail. Connects to the larger trail system.", avatarFit: ["biohacker-exec", "tech-founder"] },
+    ],
+    restaurants: [
+      { name: "Suerte", type: "restaurant", description: "Contemporary Mexican. James Beard semi-finalist. The duck carnitas and bone marrow tostada are transcendent. This is one of the best restaurants in Texas, period.", avatarFit: ["tech-founder", "biohacker-exec"] },
+      { name: "Franklin Barbecue", type: "restaurant", description: "The most famous BBQ in America. Yes, the line is real (3+ hours). Yes, the brisket is worth it. Pro tip: order online for pickup or go on a weekday.", avatarFit: ["tech-founder"] },
+      { name: "Launderette", type: "restaurant", description: "New American in a converted laundromat. Beautiful space, inventive menu, excellent cocktails. The Gulf fish is always a winner.", avatarFit: ["tech-founder", "biohacker-exec"] },
+      { name: "Veracruz All Natural", type: "restaurant", description: "Started as a food truck, now an Austin institution. The migas tacos are arguably the best breakfast in the city. Fast, affordable, genuinely great.", avatarFit: ["tech-founder", "young-family"] },
+      { name: "Citizen Eatery", type: "restaurant", description: "100% plant-based restaurant that's actually delicious. Clean eating without sacrificing flavor. The cauliflower wings and mushroom burger convert carnivores.", avatarFit: ["biohacker-exec"] },
+    ],
+    coffee: [
+      { name: "Brew & Brew", type: "coffee", description: "Coffee and craft beer under one roof. Transition seamlessly from morning productivity to afternoon socializing. Good wifi, long tables, eclectic crowd.", address: "500 San Marcos St", avatarFit: ["tech-founder"] },
+      { name: "Figure 8 Coffee Purveyors", type: "coffee", description: "Small-batch roaster with a tiny, perfect shop. No frills, just exceptional coffee. The batch brew changes daily.", avatarFit: ["tech-founder", "biohacker-exec"] },
+      { name: "Wright Bros. Brew & Brew", type: "coffee", description: "Another coffee-beer hybrid. East Austin loves this concept. Solid espresso, local beers on tap, and a patio.", avatarFit: ["tech-founder"] },
+    ],
+    wellness: [
+      { name: "Kusha Wellness", type: "wellness", description: "Float tanks, infrared sauna, and massage in East Austin. Newer facility, clean, and well-run. Growing biohacker following.", avatarFit: ["biohacker-exec"] },
+      { name: "Restore Hyper Wellness East", type: "wellness", description: "Full biohacking menu: cryo, IV drips, red light therapy, compression. Quick sessions between meetings.", avatarFit: ["biohacker-exec"] },
+    ],
+    coworking: [
+      { name: "Vessel Coworking", type: "coworking", description: "East Austin's homegrown coworking space. Converted warehouse, good vibes, and a community of creative entrepreneurs. Less corporate than WeWork.", avatarFit: ["tech-founder"] },
+      { name: "Capital Factory East (upcoming)", type: "coworking", description: "Capital Factory is expanding east. When it opens, this will be a major draw for the startup community.", avatarFit: ["tech-founder"] },
+    ],
+    outdoors: [
+      { name: "East Lady Bird Lake Trail", type: "park", description: "The east side of the trail loop is less crowded and equally beautiful. Boardwalk section is stunning. Connects to Roy G Guerrero Park.", avatarFit: ["biohacker-exec", "tech-founder", "young-family"] },
+      { name: "Boggy Creek Greenbelt", type: "park", description: "Quiet, neighborhood-scale green space. Good for family walks and casual jogging. Not as dramatic as Barton Creek but more accessible.", avatarFit: ["young-family"] },
+      { name: "Festival Beach", type: "park", description: "On Lady Bird Lake. Volleyball courts, open fields, and lake access. Great for weekend picnics and casual sports.", avatarFit: ["young-family", "tech-founder"] },
+    ],
+    grocery: [
+      { name: "Quickie Pickie", type: "grocery", description: "Not a full grocery — a curated corner store/deli with local products, prepared foods, and an excellent beer selection. The East Austin vibe in a shop.", avatarFit: ["tech-founder"] },
+      { name: "H-E-B Mueller", type: "grocery", description: "Full H-E-B with great organic selection. Technically in 78723 but serves all of East Austin.", avatarFit: ["young-family", "biohacker-exec"] },
+      { name: "Boggy Creek Farm Stand", type: "grocery", description: "One of the oldest urban farms in Texas. Seasonal produce, eggs, and flowers direct from the farm. Wednesday and Saturday mornings.", address: "3414 Lyons Rd", avatarFit: ["biohacker-exec"] },
+    ],
+    familyFriendly: [
+      { name: "Thinkery (Austin Children's Museum)", type: "activity", description: "Interactive STEM museum in Mueller, right next door. Excellent for ages 0-10. Water play, maker space, and rotating exhibits.", avatarFit: ["young-family"] },
+      { name: "Mueller Lake Park", type: "park", description: "Playground, splash pad, walking paths around the lake. The social hub for East Austin families. Saturday mornings are bustling.", avatarFit: ["young-family"] },
+      { name: "Blue Starlite Mini Urban Drive-In", type: "activity", description: "Tiny drive-in movie theater. Quirky, charming, and uniquely Austin. Great for family movie nights or a date.", avatarFit: ["young-family", "tech-founder"] },
+    ],
+    localSecrets: [
+      "The Weirdos of East Austin mural trail is an unofficial walking tour of street art — start at the corner of E 6th and Chicon and wander east.",
+      "The Saturday morning Boggy Creek Farm Stand is where Austin chefs shop. Get there by 9am for the best produce.",
+      "Whisler's bar has a mezcal bar called Mezcalería Tobala hidden upstairs. One of the best cocktail bars in the city, and most people walk right past it.",
+      "The neighborhood between E 7th and Holly Street, east of I-35, has the highest concentration of new construction in Austin right now. Drive it to understand the pace of change.",
+    ],
+    avatarScores: { "tech-founder": 5, "biohacker-exec": 3, "young-family": 2, investor: 5 },
+  },
+
+  {
+    slug: "78723",
+    name: "78723 — Mueller / Windsor Park",
+    zips: ["78723"],
+    searchQuery: "78723",
+    heroTagline: "Master-planned meets neighborhood soul. Austin's best-kept family secret.",
+    overview:
+      "78723 encompasses two distinct but complementary neighborhoods: Mueller — a master-planned community built on the former Robert Mueller Municipal Airport — and Windsor Park, an established mid-century neighborhood experiencing thoughtful revitalization. Mueller is new-urbanist: walkable streets, mixed-use retail, parks, and diverse housing from townhomes to single-family. Windsor Park is older, more affordable, and increasingly popular with young families and investors who recognize its trajectory. Together, they form one of Austin's most balanced neighborhoods — urban convenience without downtown density, community without suburban isolation.",
+    vibe: "Community-driven, diverse, intentionally designed. Mueller feels planned (because it is) but in a good way — it works. Windsor Park feels organic and evolving. The combined effect is a neighborhood that's equally comfortable for a family with toddlers and a couple in their 30s who aren't ready for the suburbs.",
+    whyEntrepreneurs:
+      "Mueller's walkability and mixed-use design make it surprisingly good for work-from-home founders. Walk to coffee, lunch, and the gym without getting in a car. The community is educated and tech-adjacent (UT and downtown are close). Coworking options are limited locally but downtown is 10 minutes. Windsor Park is where founders buy when they want space and value — larger lots, renovation potential, and a fraction of 78704 prices.",
+    whyFamilies:
+      "This is the family neighborhood that urban parents dream about. Mueller has Thinkery (children's museum), Lake Park with splash pad, Mueller Greenway for bike rides, and a Farmers Market every Sunday. Walkable to restaurants and grocery. The schools are improving — Blanton Elementary is solid, and KIPP and Harmony charter schools are strong alternatives. Windsor Park has larger lots with actual yards, mature trees, and a tight-knit community feel. Families here know their neighbors.",
+    whyHealth:
+      "Mueller's design encourages active living — you walk everywhere. The Mueller Greenway is a landscaped path connecting parks and green spaces. Big Stacy Pool (nearby) and the Lady Bird Lake trail are accessible. Gyms are limited locally — most residents drive to CrossFit or boutique studios nearby. The H-E-B has a strong organic section. For biohacking specifically, you'd need to drive to East Austin or downtown for cryo/float/IV facilities.",
+    whyInvestors:
+      "78723 is an investor favorite. Windsor Park properties offer strong value-add potential — original 1950s-60s homes on generous lots that can be renovated or rebuilt. ADU potential is real on many lots. Mueller condos and townhomes have steady rental demand. The neighborhood is in the path of development — the Domain/North Burnet corridor pushes value eastward. Appreciation has been strong (10-15% YoY in some pockets) and the fundamentals support continued growth. Cap rates are better here than in 78704 or downtown.",
+    medianPrice: "$525K",
+    priceRange: "$300K (Windsor Park fixer) — $1.2M (Mueller new build)",
+    avgSqft: "1,500",
+    walkScore: 55,
+    commuteDowntown: "10-15 min",
+    schools: [
+      { name: "Blanton Elementary", type: "elementary", rating: "7/10", district: "Austin ISD", notes: "Popular Mueller-area campus, strong community" },
+      { name: "Andrews Elementary", type: "elementary", rating: "6/10", district: "Austin ISD" },
+      { name: "KIPP Austin Comunidad", type: "charter", rating: "8/10", district: "KIPP", notes: "Bilingual charter, excellent results" },
+      { name: "Harmony School of Science", type: "charter", rating: "8/10", district: "Harmony", notes: "STEM-focused charter with strong test scores" },
+      { name: "Reagan High School", type: "high", rating: "6/10", district: "Austin ISD", notes: "Improving significantly with new investment" },
+    ],
+    fitness: [
+      { name: "Mueller Greenway", type: "outdoor", description: "1.5+ miles of landscaped walking/running paths connecting Mueller's parks. Perfect for morning runs, stroller walks, and bike rides. The neighborhood's front yard.", avatarFit: ["young-family", "biohacker-exec"] },
+      { name: "Big Stacy Pool", type: "outdoor", description: "Neighborhood spring-fed pool nearby (in Travis Heights). Cold water, free, and open seasonally. The locals' alternative to crowded Barton Springs.", avatarFit: ["biohacker-exec"] },
+      { name: "Gold's Gym Airport", type: "gym", description: "Full-service gym with the basics done well. Not boutique, not fancy — just solid equipment, good hours, and affordable.", avatarFit: ["biohacker-exec"] },
+    ],
+    restaurants: [
+      { name: "Batch Craft Soda + Kolaches", type: "restaurant", description: "Texas kolaches (savory pastries) and craft sodas made in-house. Mueller's signature casual spot. The jalapeño-cheese kolache is perfect.", avatarFit: ["young-family", "tech-founder"] },
+      { name: "Torchy's Tacos (Mueller)", type: "restaurant", description: "Austin's taco chain started here. The Trailer Park taco (fried chicken, green chiles, cheese) is the cult classic. Fast, casual, family-friendly.", avatarFit: ["young-family"] },
+      { name: "Intero", type: "restaurant", description: "Italian fine dining that's worth the drive from anywhere in Austin. Hand-made pasta, wood-fired dishes, and an Italian wine list that will ruin other restaurants for you.", avatarFit: ["tech-founder", "biohacker-exec"] },
+      { name: "Taco Flats", type: "restaurant", description: "Tacos and frozen margaritas on the patio. Weekend brunch is the Mueller neighborhood social scene.", avatarFit: ["tech-founder", "young-family"] },
+    ],
+    coffee: [
+      { name: "Flitch Coffee", type: "coffee", description: "Tiny specialty coffee trailer in Mueller. Excellent pour-overs and a rotation of single-origin beans. No seating — grab and walk.", avatarFit: ["tech-founder"] },
+      { name: "Epoch Coffee (North Loop, nearby)", type: "coffee", description: "24/7 coffee shop 5 minutes away. The late-night study/work culture is strong. Solid espresso, mediocre food, unbeatable hours.", avatarFit: ["tech-founder"] },
+    ],
+    wellness: [
+      { name: "Restore Hyper Wellness (North)", type: "wellness", description: "Closest biohacking facility. Cryo, IV drips, red light, compression. 10-minute drive from Mueller.", avatarFit: ["biohacker-exec"] },
+    ],
+    coworking: [
+      { name: "Home office culture", type: "coworking", description: "Honestly, most Mueller residents work from home. The neighborhood is designed for it — walk to coffee, take a meeting at a café, and be back at your desk in 5 minutes. Dedicated coworking spaces are limited locally.", avatarFit: ["tech-founder"] },
+    ],
+    outdoors: [
+      { name: "Mueller Lake Park", type: "park", description: "The community's centerpiece. 30-acre park with lake, playground, splash pad, and walking paths. Sunday Farmers Market is a weekly social ritual.", avatarFit: ["young-family", "tech-founder"] },
+      { name: "Mueller Southwest Greenway", type: "park", description: "Native landscaping, walking paths, and open fields. Connects the residential areas to the retail center. Kids ride bikes here after school.", avatarFit: ["young-family"] },
+      { name: "Bartholomew District Park", type: "park", description: "Full-size pool, sports fields, tennis courts, and picnic areas. Windsor Park's main park. Great for youth sports.", avatarFit: ["young-family"] },
+    ],
+    grocery: [
+      { name: "H-E-B Mueller", type: "grocery", description: "Excellent H-E-B with a strong organic section, prepared foods, sushi bar, and curbside pickup. The anchor store for the whole neighborhood.", avatarFit: ["young-family", "biohacker-exec"] },
+      { name: "Mueller Farmers Market", type: "grocery", description: "Every Sunday. Local produce, pastured meats, fresh bread, and artisan goods. The social event of the week for Mueller families.", avatarFit: ["biohacker-exec", "young-family"] },
+    ],
+    familyFriendly: [
+      { name: "Thinkery", type: "activity", description: "Austin's premier children's museum. Interactive STEM exhibits, water play, outdoor spaces, and maker labs. Ages 0-10. Annual memberships are worth it if you live nearby.", address: "1830 Simond Ave", avatarFit: ["young-family"] },
+      { name: "Mueller Lake Park Playground", type: "park", description: "Large, well-maintained playground with structures for all ages. Shaded seating for parents. Always busy on weekends — which means instant playdates.", avatarFit: ["young-family"] },
+      { name: "Mueller Splash Pad", type: "park", description: "Free water play area open seasonally. The summer hangout for Mueller kids. Bring towels and sunscreen.", avatarFit: ["young-family"] },
+    ],
+    localSecrets: [
+      "The Mueller air traffic control tower is still standing — it's been converted into a community landmark and the Sunday Farmers Market happens right at its base.",
+      "Windsor Park has some of the best value-add investment opportunities in Austin right now. Original 1950s ranch homes on 7,000+ sqft lots. Buy, renovate, and you're sitting on a property worth 2x what you paid within 3 years.",
+      "The North Loop neighborhood (just west of 78723) has a strip of record shops, vintage stores, and casual restaurants that feels like Austin in 2010. It's walking distance from Mueller.",
+      "Mueller was designed by the same urban planning firm (McCann Adams) that designed some of the most successful new-urbanist communities in the US. The walkability is intentional, not accidental.",
+    ],
+    avatarScores: { "tech-founder": 4, "biohacker-exec": 3, "young-family": 4, investor: 5 },
+  },
 ];

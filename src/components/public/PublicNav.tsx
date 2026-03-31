@@ -53,6 +53,7 @@ export function PublicNav() {
                 { href: "/buy", label: "Buy" },
                 { href: "/sell", label: "Sell" },
                 { href: "/search", label: "Search" },
+                { href: "/neighborhoods", label: "Neighborhoods" },
                 { href: "/about", label: "About" },
                 { href: "/contact", label: "Contact" },
               ].map((link) => (
