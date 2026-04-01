@@ -10,6 +10,7 @@ import { ListingActions } from "./ListingActions";
 import { OfferEstimator } from "./OfferEstimator";
 import { CommuteCalculator } from "./CommuteCalculator";
 import { NearbyAmenities } from "./NearbyAmenities";
+import { PriceHistory } from "./PriceHistory";
 import { addToRecentlyViewed } from "./RecentlyViewed";
 import { useEffect } from "react";
 
@@ -329,6 +330,13 @@ export function ListingDetailClient({ listing, similarListings = [] }: { listing
 
                 {/* Nearby Amenities */}
                 <NearbyAmenities zip={listing.zip} city={listing.city} />
+
+                {/* Price History */}
+                <PriceHistory
+                  listingId={listing.id}
+                  currentPrice={listing.priceAmount}
+                  listedDate={listing.createdAt || null}
+                />
 
                 <div className="bg-navy p-6 text-center">
                   <p className="text-white font-semibold mb-2">Find Similar Properties</p>
