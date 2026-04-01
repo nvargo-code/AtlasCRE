@@ -149,6 +149,17 @@ export function ListingDetailClient({ listing, similarListings = [] }: { listing
                     url={`/listings/${listing.id}`}
                     title={`${listing.address}, ${listing.city} | Shapiro Group`}
                   />
+                  <a
+                    href={`/listings/${listing.id}/print`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-8 h-8 flex items-center justify-center bg-warm-gray hover:bg-navy/10 transition-colors group"
+                    title="Print / PDF"
+                  >
+                    <svg className="w-4 h-4 text-mid-gray group-hover:text-navy" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                    </svg>
+                  </a>
                   <span className="text-[12px] font-semibold tracking-[0.12em] uppercase bg-gold/10 text-gold px-4 py-1.5">
                     For {listing.listingType}
                   </span>
