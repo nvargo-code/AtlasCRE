@@ -3,6 +3,7 @@
 import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { OnboardingModal } from "@/components/public/OnboardingModal";
 
 interface RecommendedListing {
   id: string;
@@ -126,6 +127,8 @@ export default function PortalDashboard() {
 
   return (
     <div className="p-6 md:p-10">
+      <OnboardingModal />
+
       {/* Header */}
       <div className="mb-10">
         <h1 className="text-2xl md:text-3xl font-light text-navy">
