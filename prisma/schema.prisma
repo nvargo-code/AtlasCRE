@@ -115,6 +115,7 @@ model Listing {
   showingRequests    ShowingRequest[]
   activities         ListingActivity[]
   hotScore           HotScore?
+  priceHistory       PriceHistory[]
 
   @@index([market])
   @@index([propertyType])
@@ -386,6 +387,21 @@ model HotScore {
   updatedAt DateTime @updatedAt
 
   @@index([score])
+}
+
+// ── Price & Status History ───────────────────────────────────────────────────
+
+model PriceHistory {
+  id         String   @id @default(cuid())
+  listingId  String
+  listing    Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  event      String   // price_change | status_change | new_listing
+  oldValue   String?  // Previous price or status
+  newValue   String   // New price or status
+  changeDate DateTime @default(now())
+
+  @@index([listingId])
+  @@index([changeDate])
 }
 
 // ── Saved Searches (with alert preferences) ─────────────────────────────────
