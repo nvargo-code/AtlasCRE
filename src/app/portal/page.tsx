@@ -4,6 +4,73 @@ import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
+interface RecommendedListing {
+  id: string;
+  address: string;
+  city: string;
+  priceAmount: number | null;
+  beds: number | null;
+  baths: number | null;
+  buildingSf: number | null;
+  imageUrl: string | null;
+  listingType: string;
+  reason: string;
+}
+
+function RecommendedHomes() {
+  const [recs, setRecs] = useState<RecommendedListing[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/portal/recommendations")
+      .then((r) => r.ok ? r.json() : { recommendations: [] })
+      .then((data) => setRecs(data.recommendations || []))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading || recs.length === 0) return null;
+
+  return (
+    <div className="mb-10">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-lg font-semibold text-navy">Recommended for You</h2>
+        <Link href="/search" className="text-[11px] font-semibold tracking-[0.1em] uppercase text-gold hover:text-gold-dark">
+          View All &rarr;
+        </Link>
+      </div>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {recs.slice(0, 4).map((listing) => (
+          <Link key={listing.id} href={`/listings/${listing.id}`} className="bg-white overflow-hidden hover:shadow-md transition-shadow group">
+            <div className="aspect-[4/3] bg-navy/5 relative overflow-hidden">
+              {listing.imageUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={listing.imageUrl} alt={listing.address} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <span className="text-mid-gray text-[11px]">No Photo</span>
+                </div>
+              )}
+            </div>
+            <div className="p-3">
+              <p className="text-sm font-semibold text-navy group-hover:text-gold transition-colors">
+                {listing.priceAmount ? `$${listing.priceAmount.toLocaleString()}` : "Contact"}
+              </p>
+              <p className="text-[12px] text-navy/70 truncate">{listing.address}</p>
+              <div className="flex items-center gap-2 mt-1 text-[11px] text-mid-gray">
+                {listing.beds && <span>{listing.beds}bd</span>}
+                {listing.baths && <span>{listing.baths}ba</span>}
+                {listing.buildingSf && <span>{listing.buildingSf.toLocaleString()}SF</span>}
+              </div>
+              <p className="text-[10px] text-gold mt-1.5">{listing.reason}</p>
+            </div>
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 interface DashboardData {
   savedCount: number;
   collectionsCount: number;
@@ -129,6 +196,9 @@ export default function PortalDashboard() {
           </div>
         </Link>
       </div>
+
+      {/* Recommended homes */}
+      <RecommendedHomes />
 
       {/* What's new / tips */}
       <div className="bg-white p-6 border border-navy/10">

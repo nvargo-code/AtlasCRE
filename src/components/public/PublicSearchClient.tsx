@@ -621,6 +621,23 @@ function SearchContent() {
                       >
                         &#9825;
                       </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          fetch("/api/portal/showings", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ listingId: listing.id }),
+                          }).then(() => {
+                            (e.target as HTMLButtonElement).textContent = "Requested";
+                            (e.target as HTMLButtonElement).classList.add("text-green-600");
+                          }).catch(() => {});
+                        }}
+                        className="text-[10px] font-semibold tracking-[0.08em] uppercase px-2 py-0.5 bg-navy/5 text-navy/40 hover:text-green-600 transition-colors"
+                        title="Request Showing"
+                      >
+                        Tour
+                      </button>
                     </div>
                   </div>
                 </div>

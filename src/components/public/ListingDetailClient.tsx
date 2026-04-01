@@ -9,6 +9,7 @@ import { ImageGallery } from "./ImageGallery";
 import { ListingActions } from "./ListingActions";
 import { OfferEstimator } from "./OfferEstimator";
 import { CommuteCalculator } from "./CommuteCalculator";
+import { NearbyAmenities } from "./NearbyAmenities";
 import { addToRecentlyViewed } from "./RecentlyViewed";
 import { useEffect } from "react";
 
@@ -314,6 +315,9 @@ export function ListingDetailClient({ listing, similarListings = [] }: { listing
                   lat={listing.lat}
                   lng={listing.lng}
                 />
+
+                {/* Nearby Amenities */}
+                <NearbyAmenities zip={listing.zip} city={listing.city} />
 
                 <div className="bg-navy p-6 text-center">
                   <p className="text-white font-semibold mb-2">Find Similar Properties</p>
