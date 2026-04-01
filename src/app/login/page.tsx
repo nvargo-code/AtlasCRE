@@ -45,11 +45,11 @@ export default function LoginPage() {
 
         <div>
           <h2 className="text-3xl font-light text-white leading-tight mb-4">
-            Agent <span className="font-semibold">Dashboard</span>
+            Your Home Search <span className="font-semibold">Starts Here</span>
           </h2>
           <p className="text-white/50 text-base leading-relaxed max-w-md">
-            Access the full AtlasCRE platform — map search, listing management,
-            favorites, saved searches, and admin tools.
+            Save homes, create collections, request showings, message your agent,
+            and search with SuperSearch — all in one place.
           </p>
         </div>
 
@@ -70,10 +70,10 @@ export default function LoginPage() {
           </div>
 
           <h1 className="text-2xl md:text-3xl font-light text-navy mb-2">
-            Agent <span className="font-semibold">Login</span>
+            Sign <span className="font-semibold">In</span>
           </h1>
           <p className="text-mid-gray text-sm mb-8">
-            Sign in to access the AtlasCRE dashboard.
+            Access your portal, saved homes, and SuperSearch.
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-5">
