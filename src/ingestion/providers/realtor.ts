@@ -2,94 +2,99 @@ import { ListingProvider, NormalizedListing } from "../types";
 
 /**
  * Realtor.com listings adapter.
- * Uses the GraphQL API that powers their website search.
+ * Uses the frontdoor GraphQL API that powers their website search.
+ * Endpoint: https://www.realtor.com/frontdoor/graphql
+ * Required header: rdc-client-name (e.g. "rdc-x")
  * Returns all property types (residential + commercial).
  */
 
-const MARKET_PARAMS: Record<string, { lat: number; lon: number; radius: number }> = {
-  austin: { lat: 30.267, lon: -97.743, radius: 30 },
-  dfw:    { lat: 32.779, lon: -96.808, radius: 40 },
+const MARKET_LOCATIONS: Record<string, string> = {
+  austin: "Austin, TX",
+  dfw:    "Dallas-Fort Worth, TX",
 };
 
 interface RealtorProperty {
   property_id?: string;
   listing_id?: string;
-  prop_type?: string;
-  prop_sub_type?: string;
-  address?: {
-    line?: string;
-    city?: string;
-    state_code?: string;
-    postal_code?: string;
-    lat?: number;
-    lon?: number;
+  list_price?: number;
+  status?: string;
+  href?: string;
+  description?: {
+    beds?: number;
+    baths?: number;
+    baths_consolidated?: string;
+    sqft?: number;
+    lot_sqft?: number;
+    garage?: number;
+    type?: string;
+    year_built?: number;
+    stories?: number;
+    text?: string;
   };
-  price?: number;
-  building_size?: { size?: number; units?: string };
-  lot_size?: { size?: number; units?: string };
-  year_built?: number;
-  beds?: number;
-  baths?: number;
-  garage?: number;
-  stories?: number;
-  agents?: Array<{
+  location?: {
+    address?: {
+      line?: string;
+      city?: string;
+      state_code?: string;
+      postal_code?: string;
+      coordinate?: { lat?: number; lon?: number };
+    };
+  };
+  advertisers?: Array<{
     name?: string;
     office?: { name?: string };
     phones?: Array<{ number?: string; type?: string }>;
     email?: string;
   }>;
-  description?: string;
   photos?: Array<{ href?: string }>;
-  rdc_web_url?: string;
+  tags?: string[];
 }
 
 interface RealtorResponse {
-  properties?: RealtorProperty[];
-  data?: { home_search?: { results?: RealtorProperty[] } };
+  data?: { home_search?: { total?: number; results?: RealtorProperty[] } };
 }
+
+const GRAPHQL_QUERY = `query RealtorSearch($query: HomeSearchCriteria!, $limit: Int, $offset: Int) {
+  home_search(query: $query, limit: $limit, offset: $offset) {
+    total
+    results {
+      property_id listing_id list_price status href
+      description { beds baths baths_consolidated sqft lot_sqft garage type year_built stories text }
+      location { address { line city state_code postal_code coordinate { lat lon } } }
+      advertisers { name office { name } phones { number type } email }
+      photos { href }
+      tags
+    }
+  }
+}`;
 
 async function fetchRealtorPage(
   market: "austin" | "dfw",
   offset: number
 ): Promise<RealtorProperty[]> {
-  const params = MARKET_PARAMS[market];
+  const location = MARKET_LOCATIONS[market];
 
   const body = {
-    operationName: "ConsumerSearchMainQuery",
+    operationName: "RealtorSearch",
     variables: {
       query: {
-        primary: true,
         status: ["for_sale", "ready_to_build"],
-        geo_lat: params.lat,
-        geo_lon: params.lon,
-        radius: `${params.radius}mi`,
+        search_location: { location },
       },
       limit: 200,
       offset,
-      sort_type: "relevant",
     },
-    query: `query ConsumerSearchMainQuery($query: SearchHomeInput, $limit: Int, $offset: Int, $sort_type: String) {
-      home_search(query: $query, limit: $limit, offset: $offset, sort_type: $sort_type) {
-        results {
-          property_id listing_id prop_type prop_sub_type
-          address { line city state_code postal_code lat lon }
-          price building_size { size units } lot_size { size units }
-          year_built beds baths garage stories
-          description rdc_web_url
-          agents { name office { name } phones { number type } email }
-          photos { href }
-        }
-      }
-    }`,
+    query: GRAPHQL_QUERY,
   };
 
-  const res = await fetch("https://www.realtor.com/api/v1/graphql", {
+  const res = await fetch("https://www.realtor.com/frontdoor/graphql", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       "Accept": "application/json",
-      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-      "Referer": "https://www.realtor.com/",
+      "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+      "rdc-client-name": "rdc-x",
+      "rdc-client-version": "2.0.0",
     },
     body: JSON.stringify(body),
     signal: AbortSignal.timeout(30_000),
@@ -129,35 +134,32 @@ function normalizeProperty(
   prop: RealtorProperty,
   market: "austin" | "dfw"
 ): NormalizedListing | null {
-  const address = prop.address?.line ?? "";
-  const city = prop.address?.city ?? "";
-  const state = prop.address?.state_code ?? "TX";
-  const zip = prop.address?.postal_code;
-  const lat = prop.address?.lat ?? 0;
-  const lng = prop.address?.lon ?? 0;
+  const addr = prop.location?.address;
+  const address = addr?.line ?? "";
+  const city = addr?.city ?? "";
+  const state = addr?.state_code ?? "TX";
+  const zip = addr?.postal_code;
+  const lat = addr?.coordinate?.lat ?? 0;
+  const lng = addr?.coordinate?.lon ?? 0;
 
   if (!address || !city || !lat || !lng) return null;
 
   const id = prop.property_id ?? prop.listing_id;
   if (!id) return null;
 
-  const agent = prop.agents?.[0];
-  const phone = agent?.phones?.find((p) => p.type === "mobile" || p.type === "work")?.number
+  const agent = prop.advertisers?.[0];
+  const phone = agent?.phones?.find((p) => p.type === "BUSINESS_PHONE" || p.type === "mobile" || p.type === "work")?.number
     ?? agent?.phones?.[0]?.number;
 
-  const rawType = (prop.prop_type ?? "").toLowerCase();
+  const rawType = (prop.description?.type ?? "").toLowerCase();
   const isResidential = RESIDENTIAL_PROP_TYPES.has(rawType);
-  const propType = prop.prop_type ?? "Commercial";
+  const propType = prop.description?.type ?? "Commercial";
   const listingType = "sale";
 
-  const buildingSf = prop.building_size?.units === "sqft"
-    ? prop.building_size.size
-    : undefined;
+  const buildingSf = prop.description?.sqft ?? undefined;
 
-  const lotAcres = prop.lot_size?.units === "acres"
-    ? prop.lot_size.size
-    : prop.lot_size?.units === "sqft" && prop.lot_size.size
-    ? prop.lot_size.size / 43560
+  const lotAcres = prop.description?.lot_sqft
+    ? prop.description.lot_sqft / 43560
     : undefined;
 
   return {
@@ -174,23 +176,23 @@ function normalizeProperty(
     listingType,
     buildingSf,
     lotSizeAcres: lotAcres,
-    yearBuilt: prop.year_built ?? undefined,
-    priceAmount: prop.price ?? undefined,
+    yearBuilt: prop.description?.year_built ?? undefined,
+    priceAmount: prop.list_price ?? undefined,
     priceUnit: "total",
     brokerName: agent?.name,
     brokerCompany: agent?.office?.name,
     brokerPhone: phone,
     brokerEmail: agent?.email,
-    description: prop.description,
+    description: prop.description?.text,
     imageUrl: prop.photos?.[0]?.href,
-    sourceUrl: prop.rdc_web_url,
+    sourceUrl: prop.href,
     rawData: prop as Record<string, unknown>,
     // Residential fields
-    beds: prop.beds,
-    baths: prop.baths,
-    garageSpaces: prop.garage,
-    stories: prop.stories,
-    propSubType: mapPropSubType(prop.prop_type),
+    beds: prop.description?.beds,
+    baths: prop.description?.baths,
+    garageSpaces: prop.description?.garage ?? undefined,
+    stories: prop.description?.stories,
+    propSubType: mapPropSubType(prop.description?.type),
     searchMode: isResidential ? "residential" : "commercial",
   };
 }
