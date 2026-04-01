@@ -7,6 +7,8 @@ import { ShareButtons } from "./ShareButtons";
 import { ListingMap } from "./ListingMap";
 import { ImageGallery } from "./ImageGallery";
 import { ListingActions } from "./ListingActions";
+import { OfferEstimator } from "./OfferEstimator";
+import { CommuteCalculator } from "./CommuteCalculator";
 import { addToRecentlyViewed } from "./RecentlyViewed";
 import { useEffect } from "react";
 
@@ -35,6 +37,7 @@ interface ListingData {
   stories: number | null;
   propSubType: string | null;
   searchMode: string;
+  createdAt?: string;
   variants: {
     id: string;
     sourceName: string;
@@ -288,9 +291,29 @@ export function ListingDetailClient({ listing, similarListings = [] }: { listing
                   </div>
                 </div>
 
+                {/* Offer Estimator */}
+                {listing.priceAmount && (
+                  <OfferEstimator
+                    listingId={listing.id}
+                    listPrice={listing.priceAmount}
+                    address={listing.address}
+                    zip={listing.zip}
+                    daysOnMarket={Math.floor((Date.now() - new Date(listing.createdAt || Date.now()).getTime()) / (1000 * 60 * 60 * 24))}
+                  />
+                )}
+
+                {/* Mortgage Calculator */}
                 {listing.priceAmount && listing.searchMode === "residential" && (
                   <MortgageCalculator listPrice={listing.priceAmount} />
                 )}
+
+                {/* Commute Calculator */}
+                <CommuteCalculator
+                  listingAddress={listing.address}
+                  listingCity={listing.city}
+                  lat={listing.lat}
+                  lng={listing.lng}
+                />
 
                 <div className="bg-navy p-6 text-center">
                   <p className="text-white font-semibold mb-2">Find Similar Properties</p>
