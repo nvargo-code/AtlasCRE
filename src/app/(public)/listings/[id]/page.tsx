@@ -145,7 +145,7 @@ export default async function ListingDetailPage({ params }: Props) {
           <div className="flex items-center gap-2 text-[12px] text-mid-gray">
             <Link href="/" className="hover:text-navy transition-colors">Home</Link>
             <span>/</span>
-            <Link href="/search" className="hover:text-navy transition-colors">Search</Link>
+            <Link href="/search" className="hover:text-navy transition-colors">SuperSearch</Link>
             <span>/</span>
             <span className="text-navy">{listing.address}</span>
           </div>
