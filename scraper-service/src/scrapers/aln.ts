@@ -349,7 +349,7 @@ export async function scrapeALN(browser: Browser): Promise<NormalizedListing[]> 
 
     // Navigate directly by URL — avoids hanging on next-button click/navigation
     let pageNum = 2;
-    while (pageNum <= 10) {
+    while (pageNum <= 50) {
       const pageUrl = `${ALN_BASE}/listings?page=${pageNum}`;
       try {
         await page.goto(pageUrl, { waitUntil: "domcontentloaded", timeout: 10000 });
