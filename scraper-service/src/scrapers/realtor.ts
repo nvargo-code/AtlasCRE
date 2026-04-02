@@ -100,7 +100,7 @@ export async function scrapeRealtor(
     const baseUrl = MARKET_URLS[market];
     let pageNum = 1;
 
-    while (pageNum <= 10) {
+    while (pageNum <= 100) {
       const url = pageNum === 1 ? baseUrl : `${baseUrl}/pg-${pageNum}`;
       console.log(`[realtor] Loading page ${pageNum}: ${url}`);
 
@@ -115,29 +115,45 @@ export async function scrapeRealtor(
       });
 
       if (!nextData) {
-        console.warn(`[realtor] No __NEXT_DATA__ found on page ${pageNum}`);
+        console.warn(`[realtor] No __NEXT_DATA__ found on page ${pageNum} — stopping`);
         break;
       }
 
-      // Dig into the Redux state for search results
+      // Dig into the Redux state for search results — try multiple known paths
+      const searchResults =
+        nextData?.props?.pageProps?.searchResults?.home_search ??
+        nextData?.props?.pageProps?.initialReduxState?.searchResults?.home_search;
+
       const props: RealtorProperty[] =
-        nextData?.props?.pageProps?.searchResults?.home_search?.results ??
-        nextData?.props?.pageProps?.initialReduxState?.searchResults?.home_search?.results ??
+        searchResults?.results ??
         nextData?.props?.pageProps?.properties ??
         [];
 
-      console.log(`[realtor] Page ${pageNum}: ${props.length} properties in __NEXT_DATA__`);
+      const totalCount: number = searchResults?.count ?? 0;
+      console.log(`[realtor] Page ${pageNum}: ${props.length} properties (total available: ${totalCount})`);
 
-      if (props.length === 0) break;
+      if (props.length === 0) {
+        console.log(`[realtor] No results on page ${pageNum} — stopping`);
+        break;
+      }
 
       for (const prop of props) {
         const normalized = normalizeProperty(prop, market);
         if (normalized) listings.push(normalized);
       }
 
-      // Check if there's a next page
-      const hasNextPage = await page.$("[aria-label='Go to next page'], [data-testid='pagination-next']");
-      if (!hasNextPage) break;
+      // Stop if we've collected all available listings
+      if (totalCount > 0 && listings.length >= totalCount) {
+        console.log(`[realtor] Collected all ${totalCount} listings — stopping`);
+        break;
+      }
+
+      // Check if there's a next page link
+      const hasNextPage = await page.$("[aria-label='Go to next page'], [data-testid='pagination-next'], a[href*='pg-']");
+      if (!hasNextPage) {
+        console.log(`[realtor] No next page button on page ${pageNum} — stopping`);
+        break;
+      }
 
       pageNum++;
     }
