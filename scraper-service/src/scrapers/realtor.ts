@@ -104,8 +104,18 @@ export async function scrapeRealtor(
       const url = pageNum === 1 ? baseUrl : `${baseUrl}/pg-${pageNum}`;
       console.log(`[realtor] Loading page ${pageNum}: ${url}`);
 
-      await page.goto(url, { waitUntil: "domcontentloaded", timeout: 30_000 });
-      await page.waitForTimeout(2000);
+      await page.goto(url, { waitUntil: "networkidle", timeout: 30_000 });
+      await page.waitForTimeout(3000);
+
+      const pageTitle = await page.title();
+      const pageUrl = page.url();
+      console.log(`[realtor] Page ${pageNum} loaded: "${pageTitle}" (${pageUrl})`);
+
+      // Save screenshot for first page to diagnose bot detection
+      if (pageNum === 1) {
+        await page.screenshot({ path: "/tmp/realtor-page1.png" });
+        console.log("[realtor] Screenshot saved to /tmp/realtor-page1.png");
+      }
 
       // Extract __NEXT_DATA__ which contains pre-loaded listing results
       const nextData = await page.evaluate(() => {
@@ -115,7 +125,9 @@ export async function scrapeRealtor(
       });
 
       if (!nextData) {
-        console.warn(`[realtor] No __NEXT_DATA__ found on page ${pageNum} — stopping`);
+        // Log page source snippet to understand what we're getting
+        const snippet = await page.evaluate(() => document.body?.innerText?.slice(0, 500) ?? "");
+        console.warn(`[realtor] No __NEXT_DATA__ on page ${pageNum}. Page text: ${snippet}`);
         break;
       }
 
