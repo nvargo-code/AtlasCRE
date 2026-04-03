@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { ListingProvider, NormalizedListing } from "./types";
 import { deduplicateListings, generateDedupeKey } from "./dedupe";
+import { runPostIngestHooks } from "./post-ingest-hooks";
 import { realtorProvider } from "./providers/realtor";
 import { loopnetProvider } from "./providers/loopnet";
 import { crexiProvider } from "./providers/crexi";
@@ -92,8 +93,13 @@ export async function runIngestion(options: IngestionOptions): Promise<Ingestion
   // Deduplicate and upsert
   const groups = deduplicateListings(allListings);
 
+  const newListingIds: string[] = [];
+
   for (const [dedupeKey, variants] of groups) {
     const master = variants[0];
+
+    // Check if listing already exists
+    const existing = await prisma.listing.findUnique({ where: { dedupeKey }, select: { id: true } });
 
     // Upsert master listing
     const listing = await prisma.listing.upsert({
@@ -140,6 +146,11 @@ export async function runIngestion(options: IngestionOptions): Promise<Ingestion
     });
     result.listingsUpserted++;
 
+    // Track newly created listings for post-ingest hooks
+    if (!existing) {
+      newListingIds.push(listing.id);
+    }
+
     // Upsert variants
     for (const v of variants) {
       const source = await prisma.listingSource.findUnique({
@@ -177,6 +188,16 @@ export async function runIngestion(options: IngestionOptions): Promise<Ingestion
         },
       });
       result.variantsCreated++;
+    }
+  }
+
+  // Run post-ingestion hooks for new listings (async, don't block return)
+  if (newListingIds.length > 0) {
+    console.log(`[runner] Running post-ingest hooks for ${newListingIds.length} new listings`);
+    for (const id of newListingIds.slice(0, 50)) { // Cap at 50 to avoid timeout
+      await runPostIngestHooks(id).catch((e) =>
+        console.error(`[runner] Post-ingest hook failed for ${id}:`, e)
+      );
     }
   }
 

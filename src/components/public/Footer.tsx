@@ -60,6 +60,8 @@ export function Footer() {
               {[
                 { href: "/buy", label: "Buy a Home" },
                 { href: "/sell", label: "Sell a Home" },
+                { href: "/investment", label: "Invest" },
+                { href: "/valuation", label: "Home Valuation" },
                 { href: "/search?searchMode=residential", label: "Residential" },
                 { href: "/search?searchMode=commercial", label: "Commercial" },
               ].map((link) => (
@@ -189,7 +191,13 @@ export function Footer() {
             </p>
             <div className="flex gap-4 justify-center md:justify-end mt-2">
               <Link href="/privacy" className="hover:text-white/50 transition-colors">
-                Privacy Policy
+                Privacy
+              </Link>
+              <Link href="/terms" className="hover:text-white/50 transition-colors">
+                Terms
+              </Link>
+              <Link href="/fair-housing" className="hover:text-white/50 transition-colors">
+                Fair Housing
               </Link>
               <a
                 href="https://www.trec.texas.gov/forms/consumer-protection-notice"

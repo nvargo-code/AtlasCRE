@@ -49,6 +49,29 @@ export async function POST(req: NextRequest) {
   return NextResponse.json(search, { status: 201 });
 }
 
+export async function PATCH(req: NextRequest) {
+  const session = await getServerSession(authOptions);
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const userId = (session.user as { id: string }).id;
+  const body = await req.json();
+  const { id, alertEnabled, alertFrequency } = body;
+
+  if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
+
+  const updated = await prisma.savedSearch.updateMany({
+    where: { id, userId },
+    data: {
+      ...(alertEnabled !== undefined ? { alertEnabled } : {}),
+      ...(alertFrequency ? { alertFrequency } : {}),
+    },
+  });
+
+  return NextResponse.json({ ok: true, updated: updated.count });
+}
+
 export async function DELETE(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session) {

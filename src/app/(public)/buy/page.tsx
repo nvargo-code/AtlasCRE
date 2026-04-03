@@ -42,8 +42,19 @@ const steps = [
 ];
 
 export default function BuyPage() {
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Service",
+    name: "Buyer Representation — Shapiro Group",
+    provider: { "@type": "RealEstateAgent", name: "Shapiro Group", url: "https://shapirogroup.co" },
+    serviceType: "Real Estate Buyer Agency",
+    areaServed: { "@type": "City", name: "Austin" },
+    description: "Expert buyer representation in Austin, TX. SuperSearch finds more listings than Zillow — including off-market and broker-exclusive properties.",
+  };
+
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       {/* Hero */}
       <section className="relative pt-32 pb-20 md:pt-40 md:pb-28 bg-navy">
         <div className="max-w-[1400px] mx-auto px-6 md:px-10">

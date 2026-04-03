@@ -1,80 +1,13 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { RevealSection } from "@/components/public/RevealSection";
+import { BLOG_ARTICLES, BLOG_CATEGORIES } from "@/data/blog-articles";
 
 export const metadata: Metadata = {
   title: "Market Updates & Insights | Shapiro Group",
   description:
     "Fact-based research, real-time statistics, and thoughtful analysis on how the economy impacts Austin real estate. Market updates from the Shapiro Group.",
 };
-
-// Placeholder articles — will be replaced with CMS/markdown content later
-const articles = [
-  {
-    slug: "austin-market-q1-2026",
-    title: "Austin Real Estate Market Update: Q1 2026",
-    excerpt:
-      "Inventory levels, median prices, and days on market — what the numbers tell us about Austin's housing market heading into spring.",
-    category: "Market Update",
-    date: "March 2026",
-    readTime: "5 min",
-  },
-  {
-    slug: "why-supersearch-matters",
-    title: "Why SuperSearch Finds More Listings Than Zillow",
-    excerpt:
-      "How our proprietary search engine aggregates data from MLS, off-market databases, and broker networks to surface properties you won't find elsewhere.",
-    category: "Technology",
-    date: "March 2026",
-    readTime: "3 min",
-  },
-  {
-    slug: "first-time-buyer-guide-austin",
-    title: "First-Time Buyer's Guide to Austin in 2026",
-    excerpt:
-      "From pre-approval to closing, everything you need to know about buying your first home in Austin. Neighborhoods, budgets, and common mistakes.",
-    category: "Guides",
-    date: "February 2026",
-    readTime: "8 min",
-  },
-  {
-    slug: "investment-properties-austin",
-    title: "Best Neighborhoods for Investment Properties in Austin",
-    excerpt:
-      "Cap rates, appreciation trends, and rental demand — our data-driven analysis of Austin's top neighborhoods for real estate investors.",
-    category: "Investment",
-    date: "February 2026",
-    readTime: "6 min",
-  },
-  {
-    slug: "selling-in-competitive-market",
-    title: "How to Sell Above Asking in a Competitive Market",
-    excerpt:
-      "Pricing strategy, staging tips, and marketing tactics that consistently drive multiple offers and above-asking sales.",
-    category: "Selling",
-    date: "January 2026",
-    readTime: "4 min",
-  },
-  {
-    slug: "78704-neighborhood-deep-dive",
-    title: "78704: Austin's Most Sought-After ZIP Code",
-    excerpt:
-      "Why South Austin's 78704 remains one of the hottest markets in Texas — school ratings, walkability, and what buyers love about the area.",
-    category: "Neighborhoods",
-    date: "January 2026",
-    readTime: "5 min",
-  },
-];
-
-const categories = [
-  "All",
-  "Market Update",
-  "Technology",
-  "Guides",
-  "Investment",
-  "Selling",
-  "Neighborhoods",
-];
 
 export default function BlogPage() {
   return (
@@ -100,7 +33,7 @@ export default function BlogPage() {
       <div className="bg-white border-b border-navy/10 sticky top-20 z-30">
         <div className="max-w-[1400px] mx-auto px-6 md:px-10">
           <div className="flex gap-6 overflow-x-auto py-4">
-            {categories.map((cat) => (
+            {BLOG_CATEGORIES.map((cat) => (
               <button
                 key={cat}
                 className={`text-[12px] font-semibold tracking-[0.1em] uppercase whitespace-nowrap transition-colors ${
@@ -120,9 +53,10 @@ export default function BlogPage() {
       <RevealSection className="section-padding bg-white">
         <div className="max-w-[1400px] mx-auto px-6 md:px-10">
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {articles.map((article) => (
-              <article
+            {BLOG_ARTICLES.map((article) => (
+              <Link
                 key={article.slug}
+                href={`/blog/${article.slug}`}
                 className="group border border-navy/10 hover:border-gold/30 transition-all duration-300"
               >
                 {/* Placeholder image area */}
@@ -148,10 +82,10 @@ export default function BlogPage() {
                   </p>
 
                   <span className="text-[12px] font-semibold tracking-[0.1em] uppercase text-navy/40 group-hover:text-gold transition-colors">
-                    Coming Soon &rarr;
+                    Read Article &rarr;
                   </span>
                 </div>
-              </article>
+              </Link>
             ))}
           </div>
         </div>

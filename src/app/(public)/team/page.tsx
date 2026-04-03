@@ -57,8 +57,32 @@ const team = [
 ];
 
 export default function TeamPage() {
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "RealEstateAgent",
+    name: "Shapiro Group",
+    url: "https://shapirogroup.co",
+    telephone: "512-537-6023",
+    email: "team@shapirogroup.co",
+    address: {
+      "@type": "PostalAddress",
+      streetAddress: "2028 Ben White Blvd, Suite 240-7070",
+      addressLocality: "Austin",
+      addressRegion: "TX",
+      postalCode: "78741",
+    },
+    employee: team.map((m) => ({
+      "@type": "Person",
+      name: m.name,
+      jobTitle: m.title,
+      email: m.email,
+      telephone: m.phone,
+    })),
+  };
+
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       {/* Hero */}
       <section className="relative pt-32 pb-20 md:pt-40 md:pb-28 bg-navy">
         <div className="max-w-[1400px] mx-auto px-6 md:px-10">

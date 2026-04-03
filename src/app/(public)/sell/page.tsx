@@ -46,9 +46,20 @@ const steps = [
   },
 ];
 
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Service",
+  name: "Listing & Seller Representation — Shapiro Group",
+  provider: { "@type": "RealEstateAgent", name: "Shapiro Group", url: "https://shapirogroup.co" },
+  serviceType: "Real Estate Listing Agency",
+  areaServed: { "@type": "City", name: "Austin" },
+  description: "Sell your Austin home for more. Data-driven pricing, professional marketing, and access to more buyers through SuperSearch.",
+};
+
 export default function SellPage() {
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       {/* Hero */}
       <section className="relative pt-32 pb-20 md:pt-40 md:pb-28 bg-navy">
         <div className="max-w-[1400px] mx-auto px-6 md:px-10">

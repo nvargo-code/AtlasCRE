@@ -40,6 +40,12 @@ model User {
   showingRequestsAsClient ShowingRequest[] @relation("ShowingRequestsAsClient")
   showingRequestsAsAgent  ShowingRequest[] @relation("ShowingRequestsAsAgent")
   listingActivities ListingActivity[]  @relation("ListingActivities")
+  transactionsAsAgent  Transaction[]    @relation("TransactionsAsAgent")
+  transactionsAsClient Transaction[]    @relation("TransactionsAsClient")
+  notifications        Notification[]   @relation("UserNotifications")
+  openHouses           OpenHouse[]      @relation("OpenHouseAgent")
+  offersAsAgent        Offer[]          @relation("OfferAgent")
+  referralsReceived    Referral[]       @relation("ReferralsReceived")
 }
 
 enum Role {
@@ -116,6 +122,9 @@ model Listing {
   activities         ListingActivity[]
   hotScore           HotScore?
   priceHistory       PriceHistory[]
+  transactions       Transaction[]
+  openHouses         OpenHouse[]
+  offers             Offer[]
 
   @@index([market])
   @@index([propertyType])
@@ -407,12 +416,17 @@ model PriceHistory {
 // ── Saved Searches (with alert preferences) ─────────────────────────────────
 
 model SavedSearch {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name      String
-  filters   Json
-  createdAt DateTime @default(now())
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name          String
+  filters       Json
+  // Alert preferences
+  alertEnabled  Boolean  @default(true)
+  alertFrequency String  @default("daily") // instant | daily | weekly | off
+  lastAlertAt   DateTime?
+  lastMatchCount Int     @default(0) // matches found in last alert run
+  createdAt     DateTime @default(now())
 }
 
 model FavoriteListing {
@@ -425,4 +439,214 @@ model FavoriteListing {
   createdAt DateTime @default(now())
 
   @@unique([userId, listingId])
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// TRANSACTION MANAGEMENT — Track deals from contract to close
+// ══════════════════════════════════════════════════════════════════════════════
+
+model Transaction {
+  id            String   @id @default(cuid())
+  listingId     String?
+  listing       Listing? @relation(fields: [listingId], references: [id], onDelete: SetNull)
+  agentId       String
+  agent         User     @relation("TransactionsAsAgent", fields: [agentId], references: [id])
+  clientId      String?
+  client        User?    @relation("TransactionsAsClient", fields: [clientId], references: [id])
+  // Property info (in case listing is deleted or not in system)
+  propertyAddress String
+  propertyCity    String   @default("Austin")
+  propertyZip     String?
+  // Deal info
+  type          String   @default("buy") // buy | sell | dual
+  status        String   @default("under_contract") // under_contract | pending | closed | fallen_through
+  contractPrice Float?
+  closeDate     DateTime?
+  contractDate  DateTime?
+  // Commission
+  commissionPct   Float?  // e.g. 3.0
+  commissionFlat  Float?  // flat fee override
+  referralPct     Float?  // referral fee if applicable
+  // Contacts
+  otherAgentName  String?
+  otherAgentPhone String?
+  otherAgentEmail String?
+  titleCompany    String?
+  lenderName      String?
+  lenderContact   String?
+  inspectorName   String?
+  inspectorContact String?
+  // Timestamps
+  notes         String?
+  tasks         TransactionTask[]
+  milestones    TransactionMilestone[]
+  documents     TransactionDocument[]
+  offers        Offer[]
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([agentId])
+  @@index([clientId])
+  @@index([status])
+}
+
+model TransactionMilestone {
+  id            String      @id @default(cuid())
+  transactionId String
+  transaction   Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  name          String      // e.g. "Option Period", "Inspection", "Appraisal", "Title", "Closing"
+  status        String      @default("upcoming") // upcoming | in_progress | completed | waived
+  dueDate       DateTime?
+  completedAt   DateTime?
+  notes         String?
+  position      Int         @default(0)
+  createdAt     DateTime    @default(now())
+
+  @@index([transactionId])
+}
+
+model TransactionTask {
+  id            String      @id @default(cuid())
+  transactionId String
+  transaction   Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  title         String
+  description   String?
+  assignedTo    String?     // "agent" | "client" | "lender" | "title" | "inspector"
+  status        String      @default("pending") // pending | completed | skipped
+  dueDate       DateTime?
+  completedAt   DateTime?
+  position      Int         @default(0)
+  createdAt     DateTime    @default(now())
+
+  @@index([transactionId])
+  @@index([status])
+}
+
+model TransactionDocument {
+  id            String      @id @default(cuid())
+  transactionId String
+  transaction   Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  name          String
+  type          String      @default("other") // contract | amendment | disclosure | inspection | appraisal | title | other
+  url           String?     // File URL (could link to external storage)
+  uploadedById  String?
+  notes         String?
+  createdAt     DateTime    @default(now())
+
+  @@index([transactionId])
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// IN-APP NOTIFICATIONS
+// ══════════════════════════════════════════════════════════════════════════════
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
+  type      String   // new_listing_match | showing_confirmed | message | price_change | milestone | system
+  title     String
+  body      String?
+  link      String?  // URL to navigate to when clicked
+  read      Boolean  @default(false)
+  metadata  Json?    // Extra data (listingId, searchId, etc.)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([read])
+  @@index([createdAt])
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// OPEN HOUSES
+// ══════════════════════════════════════════════════════════════════════════════
+
+model OpenHouse {
+  id          String   @id @default(cuid())
+  listingId   String
+  listing     Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  agentId     String
+  agent       User     @relation("OpenHouseAgent", fields: [agentId], references: [id])
+  date        DateTime
+  startTime   String   // "1:00 PM"
+  endTime     String   // "4:00 PM"
+  notes       String?
+  status      String   @default("scheduled") // scheduled | completed | cancelled
+  rsvpCount   Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  @@index([listingId])
+  @@index([agentId])
+  @@index([date])
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// OFFERS — Track incoming offers on listings
+// ══════════════════════════════════════════════════════════════════════════════
+
+model Offer {
+  id            String      @id @default(cuid())
+  transactionId String?
+  transaction   Transaction? @relation(fields: [transactionId], references: [id], onDelete: SetNull)
+  listingId     String
+  listing       Listing     @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  agentId       String      // Our listing agent
+  agent         User        @relation("OfferAgent", fields: [agentId], references: [id])
+  // Offer details
+  offerPrice    Float
+  buyerName     String
+  buyerAgent    String?
+  buyerAgentPhone String?
+  buyerAgentEmail String?
+  buyerPreApproved Boolean  @default(false)
+  financingType String      @default("conventional") // conventional | fha | va | cash | other
+  earnestMoney  Float?
+  closingDate   DateTime?
+  optionPeriod  Int?        // days
+  optionFee     Float?
+  contingencies String?     // inspection, appraisal, financing, sale of home
+  escalationClause Float?   // max escalation price
+  notes         String?
+  // Status
+  status        String      @default("received") // received | reviewing | countered | accepted | rejected | expired | withdrawn
+  counterPrice  Float?
+  respondBy     DateTime?
+  respondedAt   DateTime?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@index([listingId])
+  @@index([transactionId])
+  @@index([agentId])
+  @@index([status])
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// REFERRALS — Agent-to-agent referral tracking
+// ══════════════════════════════════════════════════════════════════════════════
+
+model Referral {
+  id              String   @id @default(cuid())
+  referringAgent  String
+  referringBrokerage String?
+  referringEmail  String?
+  referringPhone  String?
+  receivingAgentId String
+  receivingAgent   User    @relation("ReferralsReceived", fields: [receivingAgentId], references: [id])
+  clientName      String
+  clientEmail     String?
+  clientPhone     String?
+  clientType      String   @default("buyer") // buyer | seller | both
+  referralFee     Float?   // Percentage
+  estimatedPrice  Float?
+  market          String   @default("austin")
+  notes           String?
+  status          String   @default("received") // received | contacted | active | closed | lost
+  closedPrice     Float?
+  paidAmount      Float?
+  paidDate        DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([receivingAgentId])
 }

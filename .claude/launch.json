@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "atlas-dev",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": ["-c", "cd '/Users/David/Library/CloudStorage/GoogleDrive-david@shapirogroup.co/My Drive/09. AI Folder/AtlasCRE' && source ~/.nvm/nvm.sh && npm run dev"],
+      "port": 3000
+    }
+  ]
+}

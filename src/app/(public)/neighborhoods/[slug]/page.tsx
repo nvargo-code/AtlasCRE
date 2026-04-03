@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { RevealSection } from "@/components/public/RevealSection";
 import { NEIGHBORHOODS, type NeighborhoodData, type Recommendation, type SchoolInfo } from "@/data/neighborhoods";
 import { BUYER_AVATARS } from "@/data/avatars";
+import { MarketDashboard } from "@/components/public/MarketDashboard";
 
 // Fallback for neighborhoods not yet in the rich data set
 const FALLBACK_NEIGHBORHOODS: Record<string, { name: string; zips: string[]; searchQuery: string; description: string }> = {
@@ -232,6 +233,24 @@ export default async function NeighborhoodPage({ params }: Props) {
           </div>
         </RevealSection>
 
+        {/* Market Dashboard */}
+        <RevealSection className="section-padding bg-white">
+          <div className="max-w-[1400px] mx-auto px-6 md:px-10">
+            <div className="text-center mb-12">
+              <p className="text-gold text-[12px] font-semibold tracking-[0.25em] uppercase mb-4">
+                Market Data
+              </p>
+              <h2 className="text-3xl md:text-4xl font-light">
+                {name} <span className="font-semibold">Market Trends</span>
+              </h2>
+              <p className="text-mid-gray text-sm mt-3 max-w-lg mx-auto">
+                Real-time pricing, inventory, and activity data powered by SuperSearch.
+              </p>
+            </div>
+            <MarketDashboard zips={zips} neighborhoodName={name} searchMode="residential" />
+          </div>
+        </RevealSection>
+
         {/* Local recommendations */}
         <RevealSection className="section-padding bg-white">
           <div className="max-w-[1400px] mx-auto px-6 md:px-10">
@@ -428,6 +447,21 @@ export default async function NeighborhoodPage({ params }: Props) {
           <div><p className="text-3xl font-bold text-navy">{fb.zips.join(", ")}</p><p className="text-[11px] font-semibold tracking-[0.15em] uppercase text-mid-gray mt-2">ZIP Code{fb.zips.length > 1 ? "s" : ""}</p></div>
         </div>
       </section>
+      {/* Market Dashboard */}
+      <RevealSection className="section-padding bg-white">
+        <div className="max-w-[1400px] mx-auto px-6 md:px-10">
+          <div className="text-center mb-12">
+            <p className="text-gold text-[12px] font-semibold tracking-[0.25em] uppercase mb-4">
+              Market Data
+            </p>
+            <h2 className="text-3xl md:text-4xl font-light">
+              {fb.name} <span className="font-semibold">Market Trends</span>
+            </h2>
+          </div>
+          <MarketDashboard zips={fb.zips} neighborhoodName={fb.name} searchMode="residential" />
+        </div>
+      </RevealSection>
+
       <RevealSection className="section-padding bg-warm-gray">
         <div className="max-w-[1400px] mx-auto px-6 md:px-10 text-center">
           <h2 className="text-3xl font-light mb-6">Detailed guide for {fb.name} <span className="font-semibold">coming soon</span></h2>

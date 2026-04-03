@@ -7,6 +7,14 @@
     {
       "path": "/api/ingest/email-scan",
       "schedule": "0 12 * * *"
+    },
+    {
+      "path": "/api/ingest/status-tracker",
+      "schedule": "0 18 * * *"
+    },
+    {
+      "path": "/api/alerts/cron",
+      "schedule": "0 8 * * *"
     }
   ]
 }

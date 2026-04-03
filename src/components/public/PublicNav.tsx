@@ -6,7 +6,7 @@ import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 
 // Pages with dark (navy) hero backgrounds where nav should start transparent
-const DARK_HERO_PAGES = ["/", "/buy", "/sell", "/team", "/about", "/contact", "/careers", "/blog", "/exclusive", "/valuation", "/find", "/privacy"];
+const DARK_HERO_PAGES = ["/", "/buy", "/sell", "/team", "/about", "/contact", "/careers", "/blog", "/exclusive", "/valuation", "/find", "/privacy", "/investment", "/terms", "/fair-housing", "/condos", "/luxury", "/new-construction", "/join"];
 
 export function PublicNav() {
   const pathname = usePathname();
@@ -60,6 +60,7 @@ export function PublicNav() {
               {[
                 { href: "/buy", label: "Buy" },
                 { href: "/sell", label: "Sell" },
+                { href: "/investment", label: "Invest" },
                 { href: "/neighborhoods", label: "Neighborhoods" },
                 { href: "/about", label: "About" },
                 { href: "/contact", label: "Contact" },
@@ -150,8 +151,9 @@ export function PublicNav() {
           {[
             { href: "/buy", label: "Buy" },
             { href: "/sell", label: "Sell" },
+            { href: "/investment", label: "Invest" },
+            { href: "/valuation", label: "Home Value" },
             { href: "/search", label: "Search" },
-            { href: "/team", label: "Team" },
             { href: "/neighborhoods", label: "Neighborhoods" },
             { href: "/careers", label: "Careers" },
             { href: "/contact", label: "Contact" },
