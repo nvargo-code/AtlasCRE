@@ -23,7 +23,7 @@ export async function GET() {
         },
       },
       client: { select: { id: true, name: true, email: true, phone: true } },
-      agent: { select: { id: true, name: true } },
+      agent: { select: { id: true, name: true, email: true, phone: true } },
     },
     orderBy: { createdAt: "desc" },
   });

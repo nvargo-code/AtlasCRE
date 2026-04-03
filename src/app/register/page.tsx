@@ -1,9 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { signIn } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 export default function RegisterPage() {
+  const router = useRouter();
   const [step, setStep] = useState<"form" | "success">("form");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
@@ -14,25 +17,44 @@ export default function RegisterPage() {
     setError("");
 
     const form = e.currentTarget;
+    const email = (form.elements.namedItem("email") as HTMLInputElement).value;
+    const password = (form.elements.namedItem("password") as HTMLInputElement).value;
+
     const data = {
       firstName: (form.elements.namedItem("firstName") as HTMLInputElement).value,
       lastName: (form.elements.namedItem("lastName") as HTMLInputElement).value,
-      email: (form.elements.namedItem("email") as HTMLInputElement).value,
+      email,
+      password,
       phone: (form.elements.namedItem("phone") as HTMLInputElement).value,
       interest: (form.elements.namedItem("interest") as HTMLSelectElement).value,
-      source: "website_registration",
     };
 
     try {
-      const res = await fetch("/api/register-lead", {
+      const res = await fetch("/api/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
-      if (!res.ok) throw new Error("Failed to register");
-      setStep("success");
-    } catch {
-      setError("Something went wrong. Please try again.");
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Registration failed");
+      }
+
+      // Auto sign-in after registration
+      const signInResult = await signIn("credentials", {
+        email,
+        password,
+        redirect: false,
+      });
+
+      if (signInResult?.ok) {
+        router.push("/portal");
+      } else {
+        setStep("success"); // Account created but auto-login failed — show success with login link
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
     } finally {
       setSending(false);
     }
@@ -149,7 +171,21 @@ export default function RegisterPage() {
 
                 <div>
                   <label className="block text-[11px] font-semibold tracking-[0.15em] uppercase text-mid-gray mb-2">
-                    Phone
+                    Password
+                  </label>
+                  <input
+                    name="password"
+                    type="password"
+                    required
+                    minLength={6}
+                    placeholder="At least 6 characters"
+                    className="w-full border border-navy/15 px-4 py-3 text-sm text-navy focus:outline-none focus:border-gold transition-colors"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-semibold tracking-[0.15em] uppercase text-mid-gray mb-2">
+                    Phone <span className="text-navy/30">(optional)</span>
                   </label>
                   <input
                     name="phone"

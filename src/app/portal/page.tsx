@@ -72,11 +72,21 @@ function RecommendedHomes() {
   );
 }
 
+interface AgentInfo {
+  id: string;
+  name: string | null;
+  email: string;
+  phone: string | null;
+  avatarUrl: string | null;
+}
+
 interface DashboardData {
   savedCount: number;
   collectionsCount: number;
   pendingShowings: number;
   unreadMessages: number;
+  agent: AgentInfo | null;
+  agentAssigned: boolean;
   recentActivity: Array<{
     id: string;
     action: string;
@@ -92,27 +102,31 @@ export default function PortalDashboard() {
   useEffect(() => {
     async function load() {
       try {
-        const [favRes, colRes, showRes, msgRes] = await Promise.all([
+        const [favRes, colRes, showRes, msgRes, agentRes] = await Promise.all([
           fetch("/api/favorites"),
           fetch("/api/portal/collections"),
           fetch("/api/portal/showings"),
           fetch("/api/portal/messages"),
+          fetch("/api/portal/my-agent"),
         ]);
 
         const favData = favRes.ok ? await favRes.json() : { length: 0 };
         const colData = colRes.ok ? await colRes.json() : { collections: [] };
         const showData = showRes.ok ? await showRes.json() : { showings: [] };
         const msgData = msgRes.ok ? await msgRes.json() : { threads: [] };
+        const agentData = agentRes.ok ? await agentRes.json() : { agent: null, assigned: false };
 
         setData({
           savedCount: Array.isArray(favData) ? favData.length : 0,
           collectionsCount: colData.collections?.length || 0,
           pendingShowings: showData.showings?.filter((s: { status: string }) => s.status === "requested" || s.status === "confirmed").length || 0,
           unreadMessages: msgData.threads?.filter((t: { hasUnread: boolean }) => t.hasUnread).length || 0,
+          agent: agentData.agent || null,
+          agentAssigned: agentData.assigned || false,
           recentActivity: [],
         });
       } catch {
-        setData({ savedCount: 0, collectionsCount: 0, pendingShowings: 0, unreadMessages: 0, recentActivity: [] });
+        setData({ savedCount: 0, collectionsCount: 0, pendingShowings: 0, unreadMessages: 0, agent: null, agentAssigned: false, recentActivity: [] });
       }
     }
     load();
@@ -157,6 +171,56 @@ export default function PortalDashboard() {
           </Link>
         ))}
       </div>
+
+      {/* Your Agent Card */}
+      {data?.agent && (
+        <div className="bg-white border border-navy/10 p-6 mb-10">
+          <div className="flex items-center gap-5">
+            <div className="w-16 h-16 rounded-full bg-gold/10 flex items-center justify-center flex-shrink-0 overflow-hidden">
+              {data.agent.avatarUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={data.agent.avatarUrl} alt={data.agent.name || ""} className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-gold text-xl font-bold">
+                  {(data.agent.name || data.agent.email)[0].toUpperCase()}
+                </span>
+              )}
+            </div>
+            <div className="flex-1">
+              <p className="text-[11px] font-semibold tracking-[0.15em] uppercase text-gold mb-1">
+                {data.agentAssigned ? "Your Agent" : "Your Team"}
+              </p>
+              <p className="text-lg font-semibold text-navy">{data.agent.name || "Shapiro Group"}</p>
+              <p className="text-mid-gray text-sm">Shapiro Group</p>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-2 flex-shrink-0">
+              {data.agent.phone && (
+                <a
+                  href={`tel:${data.agent.phone}`}
+                  className="flex items-center gap-2 px-4 py-2 text-[11px] font-semibold tracking-[0.08em] uppercase bg-warm-gray text-navy hover:bg-navy/10 transition-colors"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
+                  Call
+                </a>
+              )}
+              <a
+                href={`mailto:${data.agent.email}`}
+                className="flex items-center gap-2 px-4 py-2 text-[11px] font-semibold tracking-[0.08em] uppercase bg-warm-gray text-navy hover:bg-navy/10 transition-colors"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                Email
+              </a>
+              <Link
+                href="/portal/messages"
+                className="flex items-center gap-2 px-4 py-2 text-[11px] font-semibold tracking-[0.08em] uppercase bg-gold text-white hover:bg-gold-dark transition-colors"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
+                Message
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Quick actions */}
       <div className="grid md:grid-cols-3 gap-4 mb-10">

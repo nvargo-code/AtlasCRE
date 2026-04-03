@@ -130,6 +130,11 @@ export default function ShowingsPage() {
                           {showing.preferredTime && ` · ${showing.preferredTime}`}
                         </p>
                       )}
+                      {showing.agent?.name && (
+                        <p className="text-[11px] text-gold mt-1">
+                          Agent: {showing.agent.name}
+                        </p>
+                      )}
                     </div>
                   </div>
                 ))}
