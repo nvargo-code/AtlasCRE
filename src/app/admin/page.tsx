@@ -79,6 +79,7 @@ export default function AdminPage() {
   const [toggling, setToggling] = useState<string | null>(null);
   const [running, setRunning] = useState<string | null>(null);
   const [clearing, setClearing] = useState(false);
+  const [clearResult, setClearResult] = useState("");
   const [results, setResults] = useState<IngestionResult[]>([]);
   const [alnTwoFaPending, setAlnTwoFaPending] = useState(false);
   const [alnTwoFaCode, setAlnTwoFaCode] = useState("");
@@ -192,7 +193,7 @@ export default function AdminPage() {
     setClearing(true);
     const res = await fetch("/api/admin/listings", { method: "DELETE" });
     const data = await res.json();
-    alert(`Deleted ${data.deletedListings} listings and ${data.deletedVariants} variants.`);
+    setClearResult(`Deleted ${data.deletedListings} listings and ${data.deletedVariants} variants.`);
     setClearing(false);
   }
 
@@ -251,6 +252,9 @@ export default function AdminPage() {
               >
                 {clearing ? "Clearing..." : "Clear All Listings"}
               </button>
+              {clearResult && (
+                <span className="text-sm text-green-600 ml-2">{clearResult}</span>
+              )}
               <button
                 onClick={() => triggerIngestion()}
                 disabled={running !== null || alnJobId !== null}

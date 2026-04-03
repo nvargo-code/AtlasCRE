@@ -41,6 +41,31 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "address and city required" }, { status: 400 });
     }
 
+    // Geocode address if lat/lng not provided
+    let finalLat = lat ? Number(lat) : 0;
+    let finalLng = lng ? Number(lng) : 0;
+
+    if (!finalLat || !finalLng) {
+      try {
+        const geoQuery = encodeURIComponent(`${address}, ${city}, TX ${zip || ""}`);
+        const geoRes = await fetch(
+          `https://nominatim.openstreetmap.org/search?q=${geoQuery}&format=json&limit=1`,
+          { headers: { "User-Agent": "SuperSearch/1.0" }, signal: AbortSignal.timeout(5000) }
+        );
+        if (geoRes.ok) {
+          const geoData = await geoRes.json();
+          if (geoData[0]) {
+            finalLat = parseFloat(geoData[0].lat);
+            finalLng = parseFloat(geoData[0].lon);
+          }
+        }
+      } catch {
+        // Geocoding failed — fall back to Austin center
+      }
+      if (!finalLat) finalLat = 30.267;
+      if (!finalLng) finalLng = -97.743;
+    }
+
     // Generate a dedupe key
     const normalizedAddr = address.toLowerCase().trim().replace(/\s+/g, " ");
     const dedupeKey = `${normalizedAddr}|${buildingSf || 0}|${(propertyType || "residential").toLowerCase()}|manual-${Date.now()}`;
@@ -52,8 +77,8 @@ export async function POST(req: NextRequest) {
         city,
         state: "TX",
         zip: zip || null,
-        lat: lat || 30.267,
-        lng: lng || -97.743,
+        lat: finalLat,
+        lng: finalLng,
         market: "austin",
         propertyType: propertyType || "Residential",
         listingType: listingType || "Sale",
