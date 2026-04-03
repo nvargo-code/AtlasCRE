@@ -23,7 +23,7 @@ export async function middleware(req: NextRequest) {
 
   // Admin route check
   if (pathname.startsWith("/admin") && token.role !== "ADMIN") {
-    return NextResponse.redirect(new URL("/dashboard", req.url));
+    return NextResponse.redirect(new URL("/portal", req.url));
   }
 
   return NextResponse.next();
