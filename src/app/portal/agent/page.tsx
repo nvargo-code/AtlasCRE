@@ -103,6 +103,7 @@ export default function AgentDashboard() {
   const [teamTotals, setTeamTotals] = useState<TeamTotals | null>(null);
   const [followUps, setFollowUps] = useState<FollowUpSuggestion[]>([]);
   const [copiedFU, setCopiedFU] = useState<string | null>(null);
+  const [digest, setDigest] = useState<{ newUsers: number; newShowings: number; newMessages: number; newListings: number; pendingShowings: number; priceChanges: number } | null>(null);
   const userRole = (session?.user as { role?: string })?.role;
 
   useEffect(() => {
@@ -139,6 +140,12 @@ export default function AgentDashboard() {
         const fuData = await fuRes.json();
         setFollowUps(fuData.suggestions || []);
       }
+
+      // Fetch daily digest
+      fetch("/api/portal/daily-digest")
+        .then((r) => r.ok ? r.json() : null)
+        .then((d) => { if (d?.digest) setDigest(d.digest); })
+        .catch(() => {});
     }
     load();
   }, []);
@@ -195,6 +202,19 @@ export default function AgentDashboard() {
         </h1>
         <p className="text-mid-gray text-sm mt-1">Manage clients, showings, and messages.</p>
       </div>
+
+      {/* Daily Digest Banner */}
+      {digest && (digest.newUsers > 0 || digest.newShowings > 0 || digest.newMessages > 0 || digest.newListings > 0) && (
+        <div className="bg-gold/5 border border-gold/20 p-4 mb-6 flex flex-wrap items-center gap-4">
+          <span className="text-[11px] font-semibold tracking-wider uppercase text-gold">Last 24h:</span>
+          {digest.newUsers > 0 && <span className="text-sm text-navy"><strong>{digest.newUsers}</strong> new leads</span>}
+          {digest.newShowings > 0 && <span className="text-sm text-navy"><strong>{digest.newShowings}</strong> showing requests</span>}
+          {digest.newMessages > 0 && <span className="text-sm text-navy"><strong>{digest.newMessages}</strong> new messages</span>}
+          {digest.newListings > 0 && <span className="text-sm text-navy"><strong>{digest.newListings}</strong> new listings</span>}
+          {digest.priceChanges > 0 && <span className="text-sm text-navy"><strong>{digest.priceChanges}</strong> price changes</span>}
+          {digest.pendingShowings > 0 && <span className="text-sm text-red-600"><strong>{digest.pendingShowings}</strong> pending confirmation</span>}
+        </div>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">

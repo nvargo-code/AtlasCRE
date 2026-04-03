@@ -14,6 +14,10 @@ export async function GET(
         include: { source: { select: { name: true, slug: true } } },
         orderBy: { fetchedAt: "desc" },
       },
+      photos: {
+        orderBy: { position: "asc" },
+        select: { url: true },
+      },
     },
   });
 

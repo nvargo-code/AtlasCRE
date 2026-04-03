@@ -57,6 +57,7 @@ interface ListingData {
     imageUrl: string | null;
     fetchedAt: string;
   }[];
+  photos?: { url: string }[];
 }
 
 function formatPrice(amount: number | null, unit: string | null): string {
@@ -125,6 +126,7 @@ export function ListingDetailClient({ listing, similarListings = [] }: { listing
             <ImageGallery
               images={[...new Set([
                 listing.imageUrl,
+                ...(listing.photos || []).map((p: { url: string }) => p.url),
                 ...listing.variants.map((v) => v.imageUrl),
               ].filter((url): url is string => !!url))]}
               address={listing.address}
