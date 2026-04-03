@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Shapiro Group | Austin Real Estate",
-    short_name: "Shapiro Group",
+    name: "SuperSearch | Shapiro Group",
+    short_name: "SuperSearch",
     description: "Austin's most comprehensive property search. SuperSearch finds more listings than Zillow.",
     start_url: "/",
     display: "standalone",
