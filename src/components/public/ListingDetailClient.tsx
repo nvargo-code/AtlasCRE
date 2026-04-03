@@ -236,20 +236,51 @@ export function ListingDetailClient({ listing, similarListings = [] }: { listing
                 </div>
               </div>
 
-              {/* Broker info */}
-              {(listing.brokerName || listing.brokerCompany) && (
-                <div className="mb-12">
-                  <h2 className="text-xl font-semibold text-navy mb-4">Listing Broker</h2>
-                  <div className="bg-warm-gray p-6">
-                    {listing.brokerName && (
-                      <p className="text-navy font-medium">{listing.brokerName}</p>
-                    )}
-                    {listing.brokerCompany && (
-                      <p className="text-mid-gray text-sm mt-1">{listing.brokerCompany}</p>
-                    )}
+              {/* Listing Agent / Broker info */}
+              <div className="mb-12">
+                <h2 className="text-xl font-semibold text-navy mb-4">Listing Agent</h2>
+                <div className="bg-warm-gray p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      {listing.brokerName && (
+                        <p className="text-navy font-semibold">{listing.brokerName}</p>
+                      )}
+                      {listing.brokerCompany && (
+                        <p className="text-mid-gray text-sm mt-0.5">{listing.brokerCompany}</p>
+                      )}
+                      {/* Pull phone/email from first variant that has it */}
+                      {(() => {
+                        const v = listing.variants.find((v) => v.brokerPhone || v.brokerEmail);
+                        return (
+                          <>
+                            {v?.brokerPhone && <p className="text-sm text-navy mt-1">{v.brokerPhone}</p>}
+                            {v?.brokerEmail && <p className="text-sm text-mid-gray">{v.brokerEmail}</p>}
+                          </>
+                        );
+                      })()}
+                      {!listing.brokerName && !listing.brokerCompany && (
+                        <p className="text-navy font-semibold">Shapiro Group</p>
+                      )}
+                    </div>
+                    <div className="flex gap-2 flex-shrink-0">
+                      {(() => {
+                        const v = listing.variants.find((v) => v.brokerPhone);
+                        const phone = v?.brokerPhone || "5125376023";
+                        return (
+                          <a href={`tel:${phone}`} className="flex items-center gap-1.5 px-3 py-2 text-[10px] font-semibold tracking-wider uppercase bg-navy text-white hover:bg-navy/90 transition-colors">
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
+                            Call
+                          </a>
+                        );
+                      })()}
+                      <a href={`mailto:${listing.variants.find((v) => v.brokerEmail)?.brokerEmail || "team@shapirogroup.co"}`} className="flex items-center gap-1.5 px-3 py-2 text-[10px] font-semibold tracking-wider uppercase bg-gold text-white hover:bg-gold-dark transition-colors">
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                        Email
+                      </a>
+                    </div>
                   </div>
                 </div>
-              )}
+              </div>
 
               {/* Sources */}
               {listing.variants.length > 0 && (

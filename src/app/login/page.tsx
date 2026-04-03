@@ -126,9 +126,21 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <div className="mt-8 pt-6 border-t border-navy/10 text-center">
+          <div className="mt-6 text-center">
+            <Link href="/forgot-password" className="text-mid-gray text-sm hover:text-gold transition-colors">
+              Forgot your password?
+            </Link>
+          </div>
+
+          <div className="mt-4 pt-6 border-t border-navy/10 text-center space-y-2">
             <p className="text-mid-gray text-sm">
-              Looking for homes?{" "}
+              Don&apos;t have an account?{" "}
+              <Link href="/register" className="text-gold hover:text-gold-dark font-medium">
+                Create Free Account
+              </Link>
+            </p>
+            <p className="text-mid-gray text-sm">
+              Just browsing?{" "}
               <Link href="/search" className="text-gold hover:text-gold-dark font-medium">
                 Search Properties
               </Link>

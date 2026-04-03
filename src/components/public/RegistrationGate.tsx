@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { signIn } from "next-auth/react";
 
 interface RegistrationGateProps {
   advantage: number;
@@ -16,23 +17,48 @@ export function RegistrationGate({ advantage, onClose }: RegistrationGateProps) 
     setSending(true);
 
     const form = e.currentTarget;
-    const data = {
-      firstName: (form.elements.namedItem("firstName") as HTMLInputElement).value,
-      lastName: (form.elements.namedItem("lastName") as HTMLInputElement).value,
-      email: (form.elements.namedItem("email") as HTMLInputElement).value,
-      phone: (form.elements.namedItem("phone") as HTMLInputElement).value,
-      source: "supersearch_gate",
-      context: `Clicked "See ${advantage} more listings" CTA`,
-    };
+    const email = (form.elements.namedItem("email") as HTMLInputElement).value;
+    const firstName = (form.elements.namedItem("firstName") as HTMLInputElement).value;
+    const lastName = (form.elements.namedItem("lastName") as HTMLInputElement).value;
+    const phone = (form.elements.namedItem("phone") as HTMLInputElement).value;
+
+    // Generate a temporary password for the gate registration
+    // User can change it later in settings
+    const tempPassword = `SS${Date.now().toString(36)}!`;
 
     try {
-      await fetch("/api/register-lead", {
+      // Create a real account
+      const res = await fetch("/api/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          firstName,
+          lastName,
+          email,
+          phone,
+          password: tempPassword,
+          interest: "buy",
+        }),
       });
+
+      if (res.ok) {
+        // Auto sign-in
+        await signIn("credentials", { email, password: tempPassword, redirect: false });
+      } else {
+        // Account might already exist — that's OK, still show success
+        // Also push as lead in case account exists but CRM doesn't have them
+        await fetch("/api/register-lead", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            firstName, lastName, email, phone,
+            source: "supersearch_gate",
+            context: `Clicked "See ${advantage} more listings" CTA`,
+          }),
+        });
+      }
     } catch {
-      // Will add webhook later
+      // Silently handle — still show success
     }
 
     setSending(false);
@@ -129,7 +155,7 @@ export function RegistrationGate({ advantage, onClose }: RegistrationGateProps) 
             <p className="text-mid-gray text-sm mb-6">
               Welcome to SuperSearch. You now have access to all{" "}
               <span className="font-semibold text-navy">{advantage.toLocaleString()}</span>{" "}
-              exclusive listings. A member of our team will reach out shortly.
+              exclusive listings. Visit your <a href="/portal" className="text-gold hover:text-gold-dark font-medium">portal</a> to save homes, create collections, and message your agent.
             </p>
             <button onClick={onClose} className="btn-primary">
               Start Browsing

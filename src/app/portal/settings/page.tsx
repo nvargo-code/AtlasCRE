@@ -22,10 +22,23 @@ export default function PortalSettingsPage() {
     setSaved(false);
   }
 
-  function savePrefs() {
-    // TODO: Save to API / database
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
+  async function savePrefs() {
+    try {
+      const res = await fetch("/api/portal/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          emailAlerts: prefs.emailAlerts,
+          alertFrequency: prefs.alertFrequency,
+        }),
+      });
+      if (res.ok) {
+        setSaved(true);
+        setTimeout(() => setSaved(false), 3000);
+      }
+    } catch {
+      // Silently fail
+    }
   }
 
   return (
