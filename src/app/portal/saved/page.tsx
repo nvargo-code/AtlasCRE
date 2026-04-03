@@ -36,13 +36,19 @@ export default function SavedHomesPage() {
     setSaved(saved.filter((s) => s.listing.id !== listingId));
   }
 
+  const [showingListingId, setShowingListingId] = useState<string | null>(null);
+  const [showingRequested, setShowingRequested] = useState<Set<string>>(new Set());
+
   async function requestShowing(listingId: string) {
-    await fetch("/api/portal/showings", {
+    const res = await fetch("/api/portal/showings", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ listingId }),
     });
-    alert("Showing requested! Your agent will confirm.");
+    if (res.ok) {
+      setShowingRequested((prev) => new Set([...prev, listingId]));
+      setShowingListingId(null);
+    }
   }
 
   return (
@@ -117,12 +123,18 @@ export default function SavedHomesPage() {
 
                 {/* Actions */}
                 <div className="flex items-center gap-3 mt-3 pt-3 border-t border-navy/5">
-                  <button
-                    onClick={() => requestShowing(item.listing.id)}
-                    className="text-[11px] font-semibold tracking-[0.08em] uppercase text-gold hover:text-gold-dark transition-colors"
-                  >
-                    Request Showing
-                  </button>
+                  {showingRequested.has(item.listing.id) ? (
+                    <span className="text-[11px] font-semibold tracking-[0.08em] uppercase text-green-600">
+                      Showing Requested &#10003;
+                    </span>
+                  ) : (
+                    <button
+                      onClick={() => requestShowing(item.listing.id)}
+                      className="text-[11px] font-semibold tracking-[0.08em] uppercase text-gold hover:text-gold-dark transition-colors"
+                    >
+                      Request Showing
+                    </button>
+                  )}
                   <Link
                     href={`/listings/${item.listing.id}`}
                     className="text-[11px] font-semibold tracking-[0.08em] uppercase text-navy/40 hover:text-navy transition-colors"

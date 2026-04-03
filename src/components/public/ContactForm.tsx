@@ -5,10 +5,12 @@ import { useState } from "react";
 export function ContactForm() {
   const [submitted, setSubmitted] = useState(false);
   const [sending, setSending] = useState(false);
+  const [error, setError] = useState("");
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setSending(true);
+    setError("");
 
     const form = e.currentTarget;
     const data = {
@@ -21,15 +23,18 @@ export function ContactForm() {
     };
 
     try {
-      await fetch("/api/contact", {
+      const res = await fetch("/api/contact", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
-      setSubmitted(true);
+      if (res.ok) {
+        setSubmitted(true);
+      } else {
+        setError("Something went wrong. Please try again or call us at 512-537-6023.");
+      }
     } catch {
-      // Still show success — we'll add webhook later
-      setSubmitted(true);
+      setError("Network error. Please check your connection and try again.");
     } finally {
       setSending(false);
     }
@@ -54,6 +59,9 @@ export function ContactForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
+      {error && (
+        <div className="bg-red-50 text-red-600 text-sm p-3 border border-red-200">{error}</div>
+      )}
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label className="block text-[11px] font-semibold tracking-[0.15em] uppercase text-mid-gray mb-2">
