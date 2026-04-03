@@ -602,8 +602,15 @@ function SearchContent() {
                     </span>
                   </div>
                   <p className="text-sm text-navy/70 mb-1 truncate">{listing.address}</p>
-                  <p className="text-[12px] text-mid-gray">{listing.city}</p>
-                  <div className="flex items-center justify-between mt-2">
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <span className="text-[12px] text-mid-gray">{listing.city}</span>
+                    {listing.propSubType && (
+                      <span className="text-[9px] font-semibold tracking-wider uppercase bg-navy/5 text-navy/40 px-1.5 py-0.5">
+                        {listing.propSubType}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center justify-between mt-1">
                     <div className="flex items-center gap-3 text-[12px] text-mid-gray">
                       {listing.beds && <span>{listing.beds} bed</span>}
                       {listing.baths && <span>{listing.baths} bath</span>}

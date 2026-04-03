@@ -30,6 +30,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE_URL}/fair-housing`, lastModified: new Date(), changeFrequency: "yearly", priority: 0.3 },
   ];
 
+  // ZIP code pages (top Austin ZIPs)
+  const topZips = [
+    "78701", "78702", "78703", "78704", "78705", "78723", "78731",
+    "78741", "78745", "78746", "78748", "78749", "78750", "78757",
+  ];
+  const zipPages: MetadataRoute.Sitemap = topZips.map((zip) => ({
+    url: `${BASE_URL}/zip/${zip}`,
+    lastModified: new Date(),
+    changeFrequency: "daily" as const,
+    priority: 0.7,
+  }));
+
   // Neighborhood pages
   const neighborhoods = [
     "downtown", "78704", "westlake", "east-side", "riverside",
@@ -61,5 +73,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     console.error("Failed to fetch listings for sitemap:", e);
   }
 
-  return [...staticPages, ...neighborhoodPages, ...listingPages];
+  return [...staticPages, ...zipPages, ...neighborhoodPages, ...listingPages];
 }

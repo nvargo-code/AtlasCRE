@@ -178,6 +178,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                 { href: "/portal/agent/commissions", label: "Commissions", icon: "dollar" },
                 { href: "/portal/agent/referrals", label: "Referrals", icon: "share" },
                 { href: "/portal/agent/offers", label: "Offers", icon: "dollar" },
+                { href: "/portal/agent/calendar", label: "Calendar", icon: "calendar" },
                 { href: "/portal/agent/open-houses", label: "Open Houses", icon: "calendar" },
                 { href: "/portal/agent/marketing", label: "Marketing", icon: "megaphone" },
                 { href: "/portal/agent/ai-writer", label: "AI Writer", icon: "ai" },
