@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { notifyShowingConfirmed } from "@/lib/notifications";
 
 // GET /api/portal/showings — List showing requests for current user
 export async function GET() {
@@ -92,7 +93,22 @@ export async function PATCH(req: NextRequest) {
       ...(feedback !== undefined && { feedback }),
       ...(wouldOffer !== undefined && { wouldOffer }),
     },
+    include: {
+      listing: { select: { address: true } },
+    },
   });
+
+  // Notify client when showing is confirmed
+  if (status === "confirmed" && updated.clientId) {
+    const dateStr = updated.preferredDate
+      ? new Date(updated.preferredDate).toLocaleDateString()
+      : "TBD";
+    notifyShowingConfirmed(
+      updated.clientId,
+      updated.listing.address,
+      `${dateStr}${updated.preferredTime ? ` (${updated.preferredTime})` : ""}`
+    ).catch(() => {});
+  }
 
   return NextResponse.json({ showing: updated });
 }
