@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
+import { createNotification } from "@/lib/notifications";
 
 /**
  * GET /api/portal/pipeline
@@ -144,6 +145,26 @@ export async function PATCH(req: NextRequest) {
         ...(stage === "closed" ? { status: "closed" } : {}),
       },
     });
+
+    // Notify client about stage change
+    const stageLabels: Record<string, string> = {
+      new: "Welcome! Your agent is getting started.",
+      searching: "Your agent is actively searching for homes for you.",
+      touring: "Time to tour! Your agent is scheduling showings.",
+      offer: "Your agent is preparing an offer.",
+      under_contract: "Congratulations! You're under contract.",
+      closed: "Congratulations! Your transaction has closed!",
+    };
+    const stageMessage = stageLabels[stage];
+    if (stageMessage) {
+      createNotification({
+        userId: clientId,
+        type: "system",
+        title: `Status update: ${stage.replace("_", " ")}`,
+        body: stageMessage,
+        link: "/portal",
+      }).catch(() => {});
+    }
 
     return NextResponse.json({ success: true, updated });
   } catch (e) {
