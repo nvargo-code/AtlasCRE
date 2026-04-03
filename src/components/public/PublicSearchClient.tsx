@@ -62,6 +62,9 @@ function SearchContent() {
   const [zillowLoading, setZillowLoading] = useState(false);
   const [showGate, setShowGate] = useState(false);
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
+  const [acSuggestions, setAcSuggestions] = useState<{ type: string; text: string; subtext?: string; href?: string }[]>([]);
+  const [acOpen, setAcOpen] = useState(false);
+  const acDebounce = useRef<ReturnType<typeof setTimeout>>(undefined);
   const [showSaveAlert, setShowSaveAlert] = useState(false);
   const [compareList, setCompareList] = useState<SimpleListing[]>([]);
   const [mobileView, setMobileView] = useState<"map" | "list">("map");
@@ -307,13 +310,69 @@ function SearchContent() {
               ))}
             </div>
 
-            <input
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search by address, city, ZIP, or neighborhood..."
-              className="flex-1 bg-white/5 border border-white/20 px-5 py-3 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-gold transition-colors"
-            />
+            <div className="flex-1 relative">
+              <input
+                type="text"
+                value={query}
+                onChange={(e) => {
+                  setQuery(e.target.value);
+                  clearTimeout(acDebounce.current);
+                  if (e.target.value.length >= 2) {
+                    acDebounce.current = setTimeout(async () => {
+                      try {
+                        const res = await fetch(`/api/autocomplete?q=${encodeURIComponent(e.target.value)}`);
+                        if (res.ok) {
+                          const data = await res.json();
+                          setAcSuggestions(data.suggestions || []);
+                          setAcOpen(true);
+                        }
+                      } catch {}
+                    }, 200);
+                  } else {
+                    setAcSuggestions([]);
+                    setAcOpen(false);
+                  }
+                }}
+                onFocus={() => { if (acSuggestions.length > 0) setAcOpen(true); }}
+                onBlur={() => setTimeout(() => setAcOpen(false), 200)}
+                placeholder="Search by address, city, ZIP, or neighborhood..."
+                className="w-full bg-white/5 border border-white/20 px-5 py-3 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-gold transition-colors"
+              />
+              {/* Autocomplete dropdown */}
+              {acOpen && acSuggestions.length > 0 && (
+                <div className="absolute top-full left-0 right-0 bg-white shadow-lg border border-navy/10 z-50 max-h-[300px] overflow-y-auto">
+                  {acSuggestions.map((s, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        if (s.href) {
+                          router.push(s.href);
+                        } else {
+                          setQuery(s.text);
+                          setAcOpen(false);
+                          const f = { ...filters, query: s.text };
+                          setFilters(f);
+                        }
+                      }}
+                      className="w-full text-left px-4 py-3 hover:bg-warm-gray transition-colors border-b border-navy/5 last:border-0"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className={`text-[9px] font-semibold tracking-wider uppercase px-1.5 py-0.5 flex-shrink-0 ${
+                          s.type === "neighborhood" ? "bg-gold/10 text-gold" :
+                          s.type === "zip" ? "bg-blue-50 text-blue-600" :
+                          s.type === "address" ? "bg-green-50 text-green-600" :
+                          "bg-navy/5 text-navy/40"
+                        }`}>{s.type}</span>
+                        <span className="text-sm text-navy font-medium truncate">{s.text}</span>
+                      </div>
+                      {s.subtext && <p className="text-[11px] text-mid-gray ml-[52px]">{s.subtext}</p>}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
             <button
               type="submit"
               className="bg-gold hover:bg-gold-dark text-white px-8 py-3 text-[12px] font-semibold tracking-[0.1em] uppercase transition-colors"
