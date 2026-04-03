@@ -4,6 +4,7 @@ import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { OnboardingModal } from "@/components/public/OnboardingModal";
+import { SkeletonDashboard } from "@/components/public/Skeleton";
 
 interface RecommendedListing {
   id: string;
