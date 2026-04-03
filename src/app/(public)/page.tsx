@@ -399,6 +399,38 @@ export default async function HomePage() {
         </div>
       </RevealSection>
 
+      {/* ─── EXPLORE BY PRICE / TYPE ─── */}
+      <RevealSection className="section-padding bg-warm-gray">
+        <div className="max-w-[1400px] mx-auto px-6 md:px-10">
+          <div className="text-center mb-10">
+            <h2 className="text-3xl md:text-4xl font-light">
+              Search by <span className="font-semibold">Category</span>
+            </h2>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[
+              { label: "Under $400K", href: "/search?searchMode=residential&priceMax=400000", desc: "Starter homes" },
+              { label: "$400K – $750K", href: "/search?searchMode=residential&priceMin=400000&priceMax=750000", desc: "Mid-range" },
+              { label: "$750K – $1.5M", href: "/search?searchMode=residential&priceMin=750000&priceMax=1500000", desc: "Move-up" },
+              { label: "$1.5M+", href: "/search?searchMode=residential&priceMin=1500000", desc: "Luxury" },
+              { label: "Condos", href: "/condos", desc: "Urban living" },
+              { label: "New Builds", href: "/new-construction", desc: "Brand new" },
+              { label: "Investment", href: "/investment", desc: "Analyze ROI" },
+              { label: "Commercial", href: "/search?searchMode=commercial", desc: "Office & retail" },
+            ].map((item) => (
+              <Link
+                key={item.label}
+                href={item.href}
+                className="bg-white p-5 text-center hover:shadow-md transition-shadow group border border-navy/5"
+              >
+                <p className="text-lg font-semibold text-navy group-hover:text-gold transition-colors">{item.label}</p>
+                <p className="text-[11px] text-mid-gray mt-1">{item.desc}</p>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </RevealSection>
+
       {/* ─── TESTIMONIALS ─── */}
       <section className="section-padding bg-navy">
         <div className="max-w-[1400px] mx-auto px-6 md:px-10">
