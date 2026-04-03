@@ -18,6 +18,70 @@ interface RecommendedListing {
   reason: string;
 }
 
+function RecentlyViewedHomes() {
+  const [viewed, setViewed] = useState<RecommendedListing[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/portal/activity?action=view&limit=8")
+      .then((r) => r.ok ? r.json() : { activity: [] })
+      .then((data) => {
+        const seen = new Set<string>();
+        const unique = (data.activity || [])
+          .filter((a: { listing: RecommendedListing | null }) => {
+            if (!a.listing || seen.has(a.listing.id)) return false;
+            seen.add(a.listing.id);
+            return true;
+          })
+          .map((a: { listing: RecommendedListing }) => ({
+            ...a.listing,
+            priceAmount: a.listing.priceAmount ? Number(a.listing.priceAmount) : null,
+            reason: "",
+          }))
+          .slice(0, 4);
+        setViewed(unique);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading || viewed.length === 0) return null;
+
+  return (
+    <div className="mb-10">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-lg font-semibold text-navy">Recently Viewed</h2>
+      </div>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {viewed.map((listing) => (
+          <Link key={listing.id} href={`/listings/${listing.id}`} className="bg-white overflow-hidden hover:shadow-md transition-shadow group">
+            <div className="aspect-[4/3] bg-navy/5 relative overflow-hidden">
+              {listing.imageUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={listing.imageUrl} alt={listing.address} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <span className="text-mid-gray text-[11px]">No Photo</span>
+                </div>
+              )}
+            </div>
+            <div className="p-3">
+              <p className="text-sm font-semibold text-navy group-hover:text-gold transition-colors">
+                {listing.priceAmount ? `$${listing.priceAmount.toLocaleString()}` : "Contact"}
+              </p>
+              <p className="text-[12px] text-navy/70 truncate">{listing.address}</p>
+              <div className="flex items-center gap-2 mt-1 text-[11px] text-mid-gray">
+                {listing.beds && <span>{listing.beds}bd</span>}
+                {listing.baths && <span>{listing.baths}ba</span>}
+              </div>
+            </div>
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function RecommendedHomes() {
   const [recs, setRecs] = useState<RecommendedListing[]>([]);
   const [loading, setLoading] = useState(true);
@@ -263,6 +327,9 @@ export default function PortalDashboard() {
           </div>
         </Link>
       </div>
+
+      {/* Recently viewed */}
+      <RecentlyViewedHomes />
 
       {/* Recommended homes */}
       <RecommendedHomes />

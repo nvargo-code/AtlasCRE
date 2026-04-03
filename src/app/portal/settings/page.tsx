@@ -152,6 +152,9 @@ export default function PortalSettingsPage() {
           </div>
         </div>
 
+        {/* Change Password */}
+        <ChangePasswordSection />
+
         {/* Sign out */}
         <div className="bg-white border border-navy/10 p-6">
           <h2 className="font-semibold text-navy mb-4">Account</h2>
@@ -162,6 +165,62 @@ export default function PortalSettingsPage() {
             Sign Out
           </button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function ChangePasswordSection() {
+  const [currentPw, setCurrentPw] = useState("");
+  const [newPw, setNewPw] = useState("");
+  const [confirmPw, setConfirmPw] = useState("");
+  const [status, setStatus] = useState<"idle" | "saving" | "success" | "error">("idle");
+  const [error, setError] = useState("");
+
+  async function handleChange() {
+    if (newPw.length < 6) { setError("Password must be at least 6 characters"); return; }
+    if (newPw !== confirmPw) { setError("Passwords don't match"); return; }
+    setStatus("saving");
+    setError("");
+
+    const res = await fetch("/api/portal/change-password", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ currentPassword: currentPw || null, newPassword: newPw }),
+    });
+
+    if (res.ok) {
+      setStatus("success");
+      setCurrentPw(""); setNewPw(""); setConfirmPw("");
+      setTimeout(() => setStatus("idle"), 3000);
+    } else {
+      const data = await res.json();
+      setError(data.error || "Failed to change password");
+      setStatus("error");
+    }
+  }
+
+  return (
+    <div className="bg-white border border-navy/10 p-6">
+      <h2 className="font-semibold text-navy mb-4">Change Password</h2>
+      {error && <div className="bg-red-50 text-red-600 text-sm p-3 mb-4 border border-red-200">{error}</div>}
+      {status === "success" && <div className="bg-green-50 text-green-700 text-sm p-3 mb-4 border border-green-200">Password updated successfully.</div>}
+      <div className="space-y-3">
+        <div>
+          <label className="block text-[11px] font-semibold tracking-[0.15em] uppercase text-mid-gray mb-1">Current Password <span className="text-navy/30">(optional if first time)</span></label>
+          <input type="password" value={currentPw} onChange={(e) => setCurrentPw(e.target.value)} className="w-full border border-navy/15 px-4 py-2.5 text-sm focus:outline-none focus:border-gold" />
+        </div>
+        <div>
+          <label className="block text-[11px] font-semibold tracking-[0.15em] uppercase text-mid-gray mb-1">New Password</label>
+          <input type="password" value={newPw} onChange={(e) => setNewPw(e.target.value)} placeholder="At least 6 characters" className="w-full border border-navy/15 px-4 py-2.5 text-sm focus:outline-none focus:border-gold" />
+        </div>
+        <div>
+          <label className="block text-[11px] font-semibold tracking-[0.15em] uppercase text-mid-gray mb-1">Confirm Password</label>
+          <input type="password" value={confirmPw} onChange={(e) => setConfirmPw(e.target.value)} className="w-full border border-navy/15 px-4 py-2.5 text-sm focus:outline-none focus:border-gold" />
+        </div>
+        <button onClick={handleChange} disabled={status === "saving" || !newPw} className="bg-navy text-white px-6 py-2.5 text-[12px] font-semibold tracking-[0.1em] uppercase hover:bg-navy/90 disabled:opacity-50">
+          {status === "saving" ? "Updating..." : "Update Password"}
+        </button>
       </div>
     </div>
   );

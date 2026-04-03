@@ -15,6 +15,9 @@ export function ListingActions({ listingId, address, city }: ListingActionsProps
   const isLoggedIn = !!session;
   const [showingRequested, setShowingRequested] = useState(false);
   const [showingLoading, setShowingLoading] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showingDate, setShowingDate] = useState("");
+  const [showingTime, setShowingTime] = useState("afternoon");
   const [isSaved, setIsSaved] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
   const [showMessageForm, setShowMessageForm] = useState(false);
@@ -54,7 +57,11 @@ export function ListingActions({ listingId, address, city }: ListingActionsProps
       await fetch("/api/portal/showings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ listingId }),
+        body: JSON.stringify({
+          listingId,
+          preferredDate: showingDate || null,
+          preferredTime: showingTime || null,
+        }),
       });
       setShowingRequested(true);
     } catch {}
@@ -153,15 +160,50 @@ export function ListingActions({ listingId, address, city }: ListingActionsProps
           {showingRequested ? (
             <div className="bg-green-50 border border-green-200 p-4 text-center">
               <p className="text-green-700 text-sm font-semibold">Showing Requested</p>
-              <p className="text-green-600 text-[12px] mt-1">Your agent will confirm shortly.</p>
+              <p className="text-green-600 text-[12px] mt-1">
+                {showingDate ? `Preferred: ${new Date(showingDate).toLocaleDateString()} (${showingTime})` : "Your agent will confirm shortly."}
+              </p>
+            </div>
+          ) : showDatePicker ? (
+            <div className="space-y-3 p-4 bg-warm-gray border border-navy/10">
+              <p className="text-[11px] font-semibold tracking-[0.12em] uppercase text-mid-gray">When would you like to tour?</p>
+              <input
+                type="date"
+                value={showingDate}
+                onChange={(e) => setShowingDate(e.target.value)}
+                min={new Date().toISOString().split("T")[0]}
+                className="w-full border border-navy/15 px-3 py-2 text-sm bg-white focus:outline-none focus:border-gold"
+              />
+              <div className="flex gap-1">
+                {["morning", "afternoon", "evening"].map((t) => (
+                  <button
+                    key={t}
+                    onClick={() => setShowingTime(t)}
+                    className={`flex-1 py-2 text-[10px] font-semibold tracking-wider uppercase ${
+                      showingTime === t ? "bg-navy text-white" : "bg-white text-navy/50 hover:text-navy"
+                    }`}
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={requestShowing}
+                  disabled={showingLoading}
+                  className="flex-1 btn-primary disabled:opacity-50"
+                >
+                  {showingLoading ? "Requesting..." : "Request Showing"}
+                </button>
+                <button onClick={() => setShowDatePicker(false)} className="text-mid-gray text-[11px] px-3">Cancel</button>
+              </div>
             </div>
           ) : (
             <button
-              onClick={requestShowing}
-              disabled={showingLoading}
-              className="btn-primary w-full disabled:opacity-50"
+              onClick={() => setShowDatePicker(true)}
+              className="btn-primary w-full"
             >
-              {showingLoading ? "Requesting..." : "Request a Showing"}
+              Request a Showing
             </button>
           )}
 

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { RevealSection } from "./RevealSection";
 import { MortgageCalculator } from "./MortgageCalculator";
@@ -319,9 +320,12 @@ export function ListingDetailClient({ listing, similarListings = [] }: { listing
               )}
             </div>
 
-            {/* Sidebar placeholder for map or similar listings */}
+            {/* Sidebar */}
             <div>
               <div className="sticky top-24">
+                {/* Ask About This Property */}
+                <AskAboutProperty listingId={listing.id} address={listing.address} />
+
                 <div className="mb-6 overflow-hidden">
                   <h3 className="text-[11px] font-semibold tracking-[0.2em] uppercase text-mid-gray mb-3 px-1">
                     Location
@@ -436,5 +440,65 @@ export function ListingDetailClient({ listing, similarListings = [] }: { listing
         </RevealSection>
       )}
     </>
+  );
+}
+
+function AskAboutProperty({ listingId, address }: { listingId: string; address: string }) {
+  const [message, setMessage] = useState("");
+  const [sent, setSent] = useState(false);
+  const [sending, setSending] = useState(false);
+
+  async function handleSend() {
+    if (!message.trim()) return;
+    setSending(true);
+    try {
+      await fetch("/api/portal/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          listingId,
+          body: message,
+          subject: `Question about ${address}`,
+        }),
+      });
+      setSent(true);
+    } catch {
+      // If not logged in, redirect to register
+      window.location.href = `/register`;
+    }
+    setSending(false);
+  }
+
+  if (sent) {
+    return (
+      <div className="bg-green-50 border border-green-200 p-6 mb-6 text-center">
+        <div className="text-green-600 text-2xl mb-2">&#10003;</div>
+        <p className="text-sm font-semibold text-navy">Message Sent!</p>
+        <p className="text-[12px] text-mid-gray mt-1">Your agent will respond shortly.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-navy p-6 mb-6">
+      <h3 className="text-white font-semibold text-sm mb-3">Ask About This Property</h3>
+      <textarea
+        value={message}
+        onChange={(e) => setMessage(e.target.value)}
+        placeholder={`I'm interested in ${address}. When can I see it?`}
+        rows={3}
+        className="w-full bg-white/10 border border-white/20 text-white placeholder:text-white/30 px-3 py-2 text-sm focus:outline-none focus:border-gold resize-none mb-3"
+      />
+      <button
+        onClick={handleSend}
+        disabled={sending || !message.trim()}
+        className="w-full bg-gold text-white py-2.5 text-[11px] font-semibold tracking-[0.1em] uppercase hover:bg-gold-dark disabled:opacity-50 transition-colors"
+      >
+        {sending ? "Sending..." : "Send to Agent"}
+      </button>
+      <p className="text-white/30 text-[10px] text-center mt-2">
+        Free. Your message goes directly to a Shapiro Group agent.
+      </p>
+    </div>
   );
 }
