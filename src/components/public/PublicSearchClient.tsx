@@ -29,6 +29,8 @@ type SimpleListing = {
   propSubType: string | null;
   searchMode: string;
   imageUrl?: string | null;
+  createdAt?: string;
+  status?: string;
 };
 
 function formatPrice(amount: number | null, unit: string | null): string {
@@ -661,11 +663,16 @@ function SearchContent() {
                     </span>
                   </div>
                   <p className="text-sm text-navy/70 mb-1 truncate">{listing.address}</p>
-                  <div className="flex items-center gap-1.5 mb-1">
+                  <div className="flex items-center gap-1.5 mb-1 flex-wrap">
                     <span className="text-[12px] text-mid-gray">{listing.city}</span>
                     {listing.propSubType && (
                       <span className="text-[9px] font-semibold tracking-wider uppercase bg-navy/5 text-navy/40 px-1.5 py-0.5">
                         {listing.propSubType}
+                      </span>
+                    )}
+                    {listing.createdAt && (Date.now() - new Date(listing.createdAt).getTime()) < 3 * 24 * 60 * 60 * 1000 && (
+                      <span className="text-[9px] font-semibold tracking-wider uppercase bg-green-50 text-green-700 px-1.5 py-0.5">
+                        New
                       </span>
                     )}
                   </div>
