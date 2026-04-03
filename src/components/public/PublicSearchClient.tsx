@@ -153,10 +153,12 @@ function SearchContent() {
     }
 
     // Zillow comparison for residential
-    if (f.searchMode === "residential" && f.query) {
+    if (f.searchMode === "residential") {
       setZillowLoading(true);
       try {
-        const zParams = new URLSearchParams({ location: f.query });
+        // Use query if available, otherwise fall back to market name
+        const location = f.query || f.market || "austin";
+        const zParams = new URLSearchParams({ location });
         if (f.priceMin) zParams.set("priceMin", f.priceMin.toString());
         if (f.priceMax) zParams.set("priceMax", f.priceMax.toString());
         if (f.bedsMin) zParams.set("bedsMin", f.bedsMin.toString());
