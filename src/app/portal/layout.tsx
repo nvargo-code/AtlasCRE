@@ -234,28 +234,99 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
       </aside>
 
       {/* Mobile nav */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-navy/10 z-40 flex">
-        {navItems.map((item) => {
-          const isActive = pathname === item.href || (item.href !== "/portal" && pathname.startsWith(item.href));
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`flex-1 flex flex-col items-center py-2 text-[10px] ${
-                isActive ? "text-gold" : "text-mid-gray"
-              }`}
-            >
-              <NavIcon icon={item.icon} />
-              <span className="mt-0.5">{item.label}</span>
-            </Link>
-          );
-        })}
-      </div>
+      <MobileNav pathname={pathname} userRole={(session?.user as { role?: string })?.role} />
 
       {/* Main content */}
       <main className="flex-1 overflow-auto pb-20 md:pb-0">
         {children}
       </main>
     </div>
+  );
+}
+
+function MobileNav({ pathname, userRole }: { pathname: string; userRole?: string }) {
+  const [moreOpen, setMoreOpen] = useState(false);
+  const isAgent = userRole === "AGENT" || userRole === "ADMIN";
+
+  const primaryItems = [
+    { href: "/portal", label: "Home", icon: "grid" },
+    { href: "/portal/saved", label: "Saved", icon: "heart" },
+    { href: "/portal/messages", label: "Messages", icon: "chat" },
+    { href: "/search", label: "Search", icon: "search" },
+  ];
+
+  const moreItems = [
+    { href: "/portal/collections", label: "Collections" },
+    { href: "/portal/saved-searches", label: "Saved Searches" },
+    { href: "/portal/showings", label: "Showings" },
+    { href: "/portal/transactions", label: "Transactions" },
+    { href: "/portal/compare", label: "Compare" },
+    { href: "/portal/seller", label: "Seller Hub" },
+    { href: "/portal/settings", label: "Settings" },
+    ...(isAgent ? [
+      { href: "/portal/agent", label: "Agent Dashboard" },
+      { href: "/portal/agent/clients", label: "Client Intel" },
+      { href: "/portal/agent/cma", label: "CMA Tool" },
+      { href: "/portal/agent/offers", label: "Offers" },
+      { href: "/portal/agent/marketing", label: "Marketing" },
+      { href: "/portal/agent/analytics", label: "Analytics" },
+    ] : []),
+  ];
+
+  return (
+    <>
+      {/* More menu overlay */}
+      {moreOpen && (
+        <div className="md:hidden fixed inset-0 z-50">
+          <div className="absolute inset-0 bg-navy/50" onClick={() => setMoreOpen(false)} />
+          <div className="absolute bottom-16 left-0 right-0 bg-white border-t border-navy/10 shadow-lg max-h-[60vh] overflow-y-auto">
+            <div className="p-3 border-b border-navy/10">
+              <p className="text-[10px] font-semibold tracking-wider uppercase text-mid-gray">All Pages</p>
+            </div>
+            <div className="grid grid-cols-2 gap-px bg-navy/5">
+              {moreItems.map((item) => {
+                const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setMoreOpen(false)}
+                    className={`p-3 text-[12px] bg-white ${isActive ? "text-gold font-semibold" : "text-navy hover:bg-warm-gray"}`}
+                  >
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bottom bar */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-navy/10 z-40 flex">
+        {primaryItems.map((item) => {
+          const isActive = pathname === item.href;
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`flex-1 flex flex-col items-center py-2 text-[10px] ${isActive ? "text-gold" : "text-mid-gray"}`}
+            >
+              <NavIcon icon={item.icon} />
+              <span className="mt-0.5">{item.label}</span>
+            </Link>
+          );
+        })}
+        <button
+          onClick={() => setMoreOpen(!moreOpen)}
+          className={`flex-1 flex flex-col items-center py-2 text-[10px] ${moreOpen ? "text-gold" : "text-mid-gray"}`}
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+          <span className="mt-0.5">More</span>
+        </button>
+      </div>
+    </>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSession, signOut } from "next-auth/react";
 
 export default function PortalSettingsPage() {
@@ -54,23 +54,7 @@ export default function PortalSettingsPage() {
 
       <div className="max-w-2xl space-y-8">
         {/* Profile */}
-        <div className="bg-white border border-navy/10 p-6">
-          <h2 className="font-semibold text-navy mb-4">Profile</h2>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-[11px] font-semibold tracking-[0.15em] uppercase text-mid-gray mb-2">
-                Name
-              </label>
-              <p className="text-navy">{session?.user?.name || "—"}</p>
-            </div>
-            <div>
-              <label className="block text-[11px] font-semibold tracking-[0.15em] uppercase text-mid-gray mb-2">
-                Email
-              </label>
-              <p className="text-navy">{session?.user?.email || "—"}</p>
-            </div>
-          </div>
-        </div>
+        <ProfileSection />
 
         {/* Notification preferences */}
         <div className="bg-white border border-navy/10 p-6">
@@ -165,6 +149,69 @@ export default function PortalSettingsPage() {
             Sign Out
           </button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function ProfileSection() {
+  const { data: session } = useSession();
+  const [name, setName] = useState(session?.user?.name || "");
+  const [phone, setPhone] = useState("");
+  const [status, setStatus] = useState<"idle" | "saving" | "saved">("idle");
+
+  useEffect(() => {
+    fetch("/api/portal/settings")
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (data?.user) {
+          setName(data.user.name || "");
+          setPhone(data.user.phone || "");
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  async function saveProfile() {
+    setStatus("saving");
+    const res = await fetch("/api/portal/settings", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, phone }),
+    });
+    if (res.ok) {
+      setStatus("saved");
+      setTimeout(() => setStatus("idle"), 3000);
+    } else {
+      setStatus("idle");
+    }
+  }
+
+  return (
+    <div className="bg-white border border-navy/10 p-6">
+      <h2 className="font-semibold text-navy mb-4">Profile</h2>
+      <div className="space-y-4">
+        <div>
+          <label className="block text-[11px] font-semibold tracking-[0.15em] uppercase text-mid-gray mb-2">Name</label>
+          <input type="text" value={name} onChange={(e) => setName(e.target.value)} className="w-full border border-navy/15 px-4 py-2.5 text-sm text-navy focus:outline-none focus:border-gold" />
+        </div>
+        <div>
+          <label className="block text-[11px] font-semibold tracking-[0.15em] uppercase text-mid-gray mb-2">Email</label>
+          <p className="text-navy text-sm px-4 py-2.5 bg-warm-gray">{session?.user?.email || "—"}</p>
+        </div>
+        <div>
+          <label className="block text-[11px] font-semibold tracking-[0.15em] uppercase text-mid-gray mb-2">Phone</label>
+          <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="512-555-0123" className="w-full border border-navy/15 px-4 py-2.5 text-sm text-navy focus:outline-none focus:border-gold" />
+        </div>
+        <button
+          onClick={saveProfile}
+          disabled={status === "saving"}
+          className={`px-6 py-2.5 text-[12px] font-semibold tracking-[0.1em] uppercase transition-colors ${
+            status === "saved" ? "bg-green-600 text-white" : "bg-gold text-white hover:bg-gold-dark"
+          } disabled:opacity-50`}
+        >
+          {status === "saving" ? "Saving..." : status === "saved" ? "Saved" : "Save Profile"}
+        </button>
       </div>
     </div>
   );

@@ -66,7 +66,16 @@ const TIER_STYLES = {
   cold: { bg: "bg-blue-50 border-blue-200", text: "text-blue-600", badge: "bg-blue-100 text-blue-600", dot: "bg-blue-400" },
 };
 
-type ViewMode = "leads" | "activity";
+interface UnassignedUser {
+  id: string;
+  name: string | null;
+  email: string;
+  phone: string | null;
+  createdAt: string;
+  _count: { listingActivities: number; favorites: number };
+}
+
+type ViewMode = "leads" | "activity" | "unassigned";
 
 export default function AgentClientsPage() {
   const { data: session } = useSession();
@@ -75,6 +84,8 @@ export default function AgentClientsPage() {
   const [leadData, setLeadData] = useState<LeadData | null>(null);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<ViewMode>("leads");
+  const [unassigned, setUnassigned] = useState<UnassignedUser[]>([]);
+  const [assigning, setAssigning] = useState<string | null>(null);
 
   useEffect(() => {
     loadData();
@@ -82,9 +93,10 @@ export default function AgentClientsPage() {
 
   async function loadData() {
     setLoading(true);
-    const [actRes, leadRes] = await Promise.all([
+    const [actRes, leadRes, unRes] = await Promise.all([
       fetch("/api/portal/activity?all=true"),
       fetch("/api/portal/lead-score"),
+      fetch("/api/portal/assign-client"),
     ]);
 
     if (actRes.ok) {
@@ -94,7 +106,24 @@ export default function AgentClientsPage() {
     if (leadRes.ok) {
       setLeadData(await leadRes.json());
     }
+    if (unRes.ok) {
+      const data = await unRes.json();
+      setUnassigned(data.unassigned || []);
+    }
     setLoading(false);
+  }
+
+  async function assignClient(clientId: string) {
+    setAssigning(clientId);
+    const res = await fetch("/api/portal/assign-client", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ clientId }),
+    });
+    if (res.ok) {
+      setUnassigned((prev) => prev.filter((u) => u.id !== clientId));
+    }
+    setAssigning(null);
   }
 
   if (userRole !== "AGENT" && userRole !== "ADMIN") {
@@ -152,7 +181,7 @@ export default function AgentClientsPage() {
 
       {/* View Toggle */}
       <div className="flex gap-1 mb-6">
-        {(["leads", "activity"] as ViewMode[]).map((mode) => (
+        {(["leads", "unassigned", "activity"] as ViewMode[]).map((mode) => (
           <button
             key={mode}
             onClick={() => setViewMode(mode)}
@@ -160,7 +189,7 @@ export default function AgentClientsPage() {
               viewMode === mode ? "bg-navy text-white" : "bg-white text-navy/50 hover:text-navy border border-navy/10"
             }`}
           >
-            {mode === "leads" ? "Lead Scores" : "Activity Feed"}
+            {mode === "leads" ? "Lead Scores" : mode === "unassigned" ? `Unassigned (${unassigned.length})` : "Activity Feed"}
           </button>
         ))}
       </div>
@@ -251,6 +280,43 @@ export default function AgentClientsPage() {
             <p className="text-mid-gray text-sm">
               Assign clients to your pipeline to see lead scores.
             </p>
+          </div>
+        )
+      ) : viewMode === "unassigned" ? (
+        /* Unassigned Users */
+        unassigned.length > 0 ? (
+          <div className="space-y-3">
+            {unassigned.map((user) => (
+              <div key={user.id} className="bg-white border border-navy/10 p-5 flex flex-col md:flex-row md:items-center gap-4">
+                <div className="flex items-center gap-3 flex-1">
+                  <div className="w-10 h-10 rounded-full bg-navy/10 flex items-center justify-center text-sm font-bold text-navy flex-shrink-0">
+                    {(user.name?.[0] || user.email[0]).toUpperCase()}
+                  </div>
+                  <div>
+                    <p className="font-semibold text-navy text-sm">{user.name || user.email.split("@")[0]}</p>
+                    <p className="text-[11px] text-mid-gray">{user.email}</p>
+                    {user.phone && <p className="text-[11px] text-mid-gray">{user.phone}</p>}
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 flex-shrink-0">
+                  <span className="text-[10px] bg-navy/5 text-navy/50 px-2 py-0.5">{user._count.listingActivities} views</span>
+                  <span className="text-[10px] bg-navy/5 text-navy/50 px-2 py-0.5">{user._count.favorites} saved</span>
+                  <span className="text-[10px] text-mid-gray">Joined {new Date(user.createdAt).toLocaleDateString()}</span>
+                  <button
+                    onClick={() => assignClient(user.id)}
+                    disabled={assigning === user.id}
+                    className="px-4 py-2 text-[10px] font-semibold tracking-wider uppercase bg-gold text-white hover:bg-gold-dark disabled:opacity-50 transition-colors"
+                  >
+                    {assigning === user.id ? "Assigning..." : "Assign to Me"}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="bg-white border border-navy/10 p-12 text-center">
+            <h3 className="text-lg font-semibold text-navy mb-2">All Users Assigned</h3>
+            <p className="text-mid-gray text-sm">Every registered user has been assigned to an agent.</p>
           </div>
         )
       ) : (

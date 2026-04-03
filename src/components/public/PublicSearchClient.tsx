@@ -61,6 +61,7 @@ function SearchContent() {
   const [zillowCount, setZillowCount] = useState<number | null>(null);
   const [zillowLoading, setZillowLoading] = useState(false);
   const [showGate, setShowGate] = useState(false);
+  const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
   const [showSaveAlert, setShowSaveAlert] = useState(false);
   const [compareList, setCompareList] = useState<SimpleListing[]>([]);
   const [mobileView, setMobileView] = useState<"map" | "list">("map");
@@ -110,6 +111,19 @@ function SearchContent() {
     if (yb) f.yearBuiltMin = Number(yb);
     setFilters(f);
   // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Load user's saved listing IDs for indicators
+  useEffect(() => {
+    fetch("/api/favorites")
+      .then((r) => r.ok ? r.json() : [])
+      .then((data) => {
+        const ids = (Array.isArray(data) ? data : data.favorites || [])
+          .map((f: { listingId?: string; listing?: { id: string } }) => f.listingId || f.listing?.id)
+          .filter(Boolean);
+        setSavedIds(new Set(ids));
+      })
+      .catch(() => {});
   }, []);
 
   const doFetch = useCallback(async () => {
@@ -577,8 +591,11 @@ function SearchContent() {
                   }`}
                 >
                   <div className="flex items-baseline justify-between mb-1">
-                    <span className="text-base font-semibold text-navy">
+                    <span className="text-base font-semibold text-navy flex items-center gap-1.5">
                       {formatPrice(listing.priceAmount, listing.priceUnit)}
+                      {savedIds.has(listing.id) && (
+                        <svg className="w-3.5 h-3.5 text-gold fill-gold inline" viewBox="0 0 24 24"><path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>
+                      )}
                     </span>
                     <span className="text-[10px] font-medium tracking-[0.1em] uppercase text-gold">
                       {listing.listingType}

@@ -75,6 +75,10 @@ export default function NeighborhoodsPage() {
             From downtown high-rises to hill country estates — find the Austin
             neighborhood that fits your lifestyle.
           </p>
+          <div className="mt-8 flex gap-4">
+            <Link href="/search?searchMode=residential" className="btn-primary">Search All Areas</Link>
+            <Link href="/neighborhoods/compare" className="btn-outline">Compare Neighborhoods</Link>
+          </div>
         </div>
       </section>
 
