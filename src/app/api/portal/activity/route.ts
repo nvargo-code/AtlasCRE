@@ -43,6 +43,40 @@ export async function GET(req: NextRequest) {
 
   const listingId = req.nextUrl.searchParams.get("listingId");
   const clientId = req.nextUrl.searchParams.get("clientId");
+  const actionFilter = req.nextUrl.searchParams.get("action");
+  const limitParam = req.nextUrl.searchParams.get("limit");
+
+  // User's own activity filtered by action (e.g., ?action=view&limit=8)
+  if (actionFilter && !listingId && !clientId) {
+    const userId = (session.user as { id: string }).id;
+    const take = limitParam ? Math.min(Number(limitParam), 50) : 20;
+
+    const activity = await prisma.listingActivity.findMany({
+      where: { userId, action: actionFilter },
+      include: {
+        listing: {
+          select: {
+            id: true, address: true, city: true, priceAmount: true,
+            beds: true, baths: true, buildingSf: true, imageUrl: true,
+            listingType: true, propSubType: true,
+          },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+      take,
+    });
+
+    const serialized = activity.map((a) => ({
+      ...a,
+      listing: a.listing ? {
+        ...a.listing,
+        priceAmount: a.listing.priceAmount ? Number(a.listing.priceAmount) : null,
+        buildingSf: a.listing.buildingSf ? Number(a.listing.buildingSf) : null,
+      } : null,
+    }));
+
+    return NextResponse.json({ activity: serialized });
+  }
 
   if (listingId) {
     // Activity for a specific listing

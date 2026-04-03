@@ -42,6 +42,7 @@ export default function CollectionDetailPage({ params }: { params: Promise<{ id:
   const [loading, setLoading] = useState(true);
   const [commentText, setCommentText] = useState<Record<string, string>>({});
   const [view, setView] = useState<"grid" | "compare">("grid");
+  const [shareCopied, setShareCopied] = useState(false);
 
   useEffect(() => {
     loadCollection();
@@ -102,18 +103,28 @@ export default function CollectionDetailPage({ params }: { params: Promise<{ id:
           </p>
         </div>
         <div className="flex gap-2">
+          <Link
+            href={`/search?searchMode=residential`}
+            className="bg-gold text-white px-3 py-2 text-[11px] font-semibold tracking-[0.1em] uppercase hover:bg-gold-dark transition-colors flex items-center gap-1.5"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Add Homes
+          </Link>
           <button
             onClick={() => {
               const url = `${window.location.origin}/shared/${collection.shareToken}`;
               navigator.clipboard.writeText(url);
-              alert("Share link copied to clipboard!");
+              setShareCopied(true);
+              setTimeout(() => setShareCopied(false), 2000);
             }}
             className="bg-white border border-navy/10 px-3 py-2 text-[11px] font-semibold tracking-[0.1em] uppercase text-navy hover:text-gold transition-colors flex items-center gap-1.5"
           >
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
             </svg>
-            Share
+            {shareCopied ? "Copied!" : "Share"}
           </button>
           <button
             onClick={() => window.print()}

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { RevealSection } from "@/components/public/RevealSection";
+import { NewsletterForm } from "@/components/public/NewsletterForm";
 import { BLOG_ARTICLES, BLOG_CATEGORIES } from "@/data/blog-articles";
 
 export const metadata: Metadata = {
@@ -101,19 +102,9 @@ export default function BlogPage() {
             Get monthly market analysis, new listing alerts, and exclusive
             insights delivered to your inbox.
           </p>
-          <form className="flex gap-0 max-w-md mx-auto">
-            <input
-              type="email"
-              placeholder="Your email address"
-              className="flex-1 bg-white/5 border border-white/20 px-5 py-3.5 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-gold transition-colors"
-            />
-            <button
-              type="submit"
-              className="bg-gold text-white px-8 py-3.5 text-[12px] font-semibold tracking-[0.12em] uppercase hover:bg-gold-dark transition-colors"
-            >
-              Subscribe
-            </button>
-          </form>
+          <div className="max-w-md mx-auto">
+            <NewsletterForm />
+          </div>
         </div>
       </RevealSection>
     </>
