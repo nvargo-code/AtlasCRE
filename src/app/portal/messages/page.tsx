@@ -76,8 +76,26 @@ export default function MessagesPage() {
     <div className="flex h-[calc(100vh-0px)] md:h-screen">
       {/* Thread list */}
       <div className={`w-full md:w-80 bg-white border-r border-navy/10 flex flex-col ${activeThread ? "hidden md:flex" : "flex"}`}>
-        <div className="p-4 border-b border-navy/10">
+        <div className="p-4 border-b border-navy/10 flex items-center justify-between">
           <h1 className="text-lg font-semibold text-navy">Messages</h1>
+          <button
+            onClick={async () => {
+              // Start a new direct message thread with agent
+              const res = await fetch("/api/portal/messages", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ body: "Hi! I'd like to chat about my home search.", subject: "New conversation" }),
+              });
+              if (res.ok) {
+                const data = await res.json();
+                loadThreads();
+                if (data.threadId) openThread(data.threadId);
+              }
+            }}
+            className="text-[10px] font-semibold tracking-wider uppercase bg-gold text-white px-3 py-1.5 hover:bg-gold-dark transition-colors"
+          >
+            + New
+          </button>
         </div>
 
         {loading ? (
@@ -85,7 +103,19 @@ export default function MessagesPage() {
         ) : threads.length === 0 ? (
           <div className="p-6 text-center text-mid-gray text-sm">
             <p>No messages yet.</p>
-            <p className="mt-1">Message your agent from any listing page.</p>
+            <button
+              onClick={async () => {
+                await fetch("/api/portal/messages", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ body: "Hi! I'm looking for homes in Austin.", subject: "Getting started" }),
+                });
+                loadThreads();
+              }}
+              className="text-gold hover:text-gold-dark font-medium mt-2 inline-block"
+            >
+              Start a conversation with your agent
+            </button>
           </div>
         ) : (
           <div className="flex-1 overflow-y-auto">

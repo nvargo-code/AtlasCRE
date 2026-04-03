@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 interface CollectionDetail {
@@ -37,6 +38,7 @@ const REACTIONS = [
 
 export default function CollectionDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { data: session } = useSession();
+  const router = useRouter();
   const userId = (session?.user as { id?: string })?.id;
   const [collection, setCollection] = useState<CollectionDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -140,6 +142,17 @@ export default function CollectionDetailPage({ params }: { params: Promise<{ id:
             className="bg-white border border-navy/10 px-3 py-2 text-[11px] font-semibold tracking-[0.1em] uppercase text-navy hover:text-gold transition-colors"
           >
             {view === "grid" ? "Compare View" : "Grid View"}
+          </button>
+          <button
+            onClick={async () => {
+              if (!collection) return;
+              if (!confirm("Delete this collection? This cannot be undone.")) return;
+              const res = await fetch(`/api/portal/collections/${collection.id}`, { method: "DELETE" });
+              if (res.ok) router.push("/portal/collections");
+            }}
+            className="bg-white border border-red-200 px-3 py-2 text-[11px] font-semibold tracking-[0.1em] uppercase text-red-400 hover:text-red-600 hover:border-red-400 transition-colors"
+          >
+            Delete
           </button>
         </div>
       </div>

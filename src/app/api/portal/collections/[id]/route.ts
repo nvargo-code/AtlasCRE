@@ -133,3 +133,30 @@ export async function POST(
 
   return NextResponse.json({ success: true });
 }
+
+// DELETE /api/portal/collections/:id — Delete a collection
+export async function DELETE(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const session = await getServerSession(authOptions);
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const userId = (session.user as { id: string }).id;
+
+  const { id } = await params;
+
+  // Verify ownership
+  const collection = await prisma.collection.findUnique({
+    where: { id },
+    select: { createdById: true },
+  });
+
+  if (!collection) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (collection.createdById !== userId) {
+    return NextResponse.json({ error: "Not authorized to delete this collection" }, { status: 403 });
+  }
+
+  await prisma.collection.delete({ where: { id } });
+
+  return NextResponse.json({ success: true });
+}
