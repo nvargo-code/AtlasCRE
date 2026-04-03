@@ -118,6 +118,27 @@ function SearchContent() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Keyboard shortcuts
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      // '/' to focus search (when not already typing)
+      if (e.key === "/" && document.activeElement?.tagName !== "INPUT" && document.activeElement?.tagName !== "TEXTAREA") {
+        e.preventDefault();
+        const searchInput = document.querySelector('input[placeholder*="Search by"]') as HTMLInputElement;
+        if (searchInput) searchInput.focus();
+      }
+      // Escape to close modals
+      if (e.key === "Escape") {
+        setShowGate(false);
+        setShowSaveAlert(false);
+        setSelectedListing(null);
+        setAcOpen(false);
+      }
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
+
   // Load user's saved listing IDs for indicators
   useEffect(() => {
     fetch("/api/favorites")
