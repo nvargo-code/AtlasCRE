@@ -87,7 +87,15 @@ export async function POST(
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const userId = (session.user as { id: string }).id;
 
-  const { listingId, reaction, comment } = await req.json();
+  const { listingId, removeListingId, reaction, comment } = await req.json();
+
+  // Remove listing from collection
+  if (removeListingId) {
+    await prisma.collectionListing.deleteMany({
+      where: { collectionId: id, listingId: removeListingId },
+    });
+    return NextResponse.json({ success: true, removed: removeListingId });
+  }
 
   if (listingId) {
     // Add listing to collection

@@ -303,6 +303,22 @@ export default function CollectionDetailPage({ params }: { params: Promise<{ id:
                     })}
                   </div>
 
+                  {/* Remove from collection */}
+                  <button
+                    onClick={async () => {
+                      if (!collection) return;
+                      await fetch(`/api/portal/collections/${collection.id}`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ removeListingId: cl.listing.id }),
+                      });
+                      loadCollection();
+                    }}
+                    className="text-[10px] text-red-400 hover:text-red-600 mt-2 transition-colors"
+                  >
+                    Remove from collection
+                  </button>
+
                   {/* Comments */}
                   {cl.comments.length > 0 && (
                     <div className="mt-3 space-y-2">

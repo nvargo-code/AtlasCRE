@@ -50,7 +50,13 @@ export default function AddListingPage() {
             <button
               onClick={() => {
                 setResult(null);
-                setForm({ ...form, address: "", zip: "", priceAmount: "", beds: "", baths: "", buildingSf: "", description: "", brokerName: "", brokerPhone: "", imageUrl: "" });
+                setForm({
+                  address: "", city: "Austin", zip: "", propertyType: "Residential",
+                  listingType: "Sale", searchMode: "residential",
+                  priceAmount: "", beds: "", baths: "", buildingSf: "",
+                  lotSizeAcres: "", yearBuilt: "", description: "",
+                  brokerName: "", brokerPhone: "", imageUrl: "", source: "verbal",
+                });
               }}
               className="border border-navy/20 text-navy px-5 py-2.5 text-sm font-semibold tracking-[0.1em] uppercase"
             >

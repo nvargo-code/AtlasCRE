@@ -40,15 +40,17 @@ export default function ComparePage() {
       const res = await fetch("/api/favorites");
       if (res.ok) {
         const data = await res.json();
-        const items = (data.favorites || data || []).map((f: { id: string; listing: SavedListing["listing"]; listingId?: string }) => ({
-          id: f.id || f.listingId,
-          listing: {
-            ...f.listing,
-            priceAmount: f.listing.priceAmount ? Number(f.listing.priceAmount) : null,
-            buildingSf: f.listing.buildingSf ? Number(f.listing.buildingSf) : null,
-            lotSizeAcres: f.listing.lotSizeAcres ? Number(f.listing.lotSizeAcres) : null,
-          },
-        }));
+        const items = (data.favorites || data || [])
+          .filter((f: { listing?: unknown }) => f.listing) // Skip deleted listings
+          .map((f: { id: string; listing: SavedListing["listing"]; listingId?: string }) => ({
+            id: f.id || f.listingId,
+            listing: {
+              ...f.listing,
+              priceAmount: f.listing.priceAmount ? Number(f.listing.priceAmount) : null,
+              buildingSf: f.listing.buildingSf ? Number(f.listing.buildingSf) : null,
+              lotSizeAcres: f.listing.lotSizeAcres ? Number(f.listing.lotSizeAcres) : null,
+            },
+          }));
         setSaved(items);
         // Auto-select first 4
         setSelected(new Set(items.slice(0, 4).map((i: SavedListing) => i.listing.id)));
