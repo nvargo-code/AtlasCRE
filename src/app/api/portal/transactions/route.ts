@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
+import { notifyMilestone } from "@/lib/notifications";
 
 export const dynamic = "force-dynamic";
 
@@ -171,7 +172,21 @@ export async function PATCH(req: NextRequest) {
           completedAt: body.status === "completed" ? new Date() : null,
           notes: body.notes !== undefined ? body.notes : undefined,
         },
+        include: {
+          transaction: { select: { clientId: true, propertyAddress: true, id: true } },
+        },
       });
+
+      // Notify client when milestone is completed
+      if (body.status === "completed" && milestone.transaction.clientId) {
+        notifyMilestone(
+          milestone.transaction.clientId,
+          milestone.name,
+          milestone.transaction.propertyAddress,
+          milestone.transaction.id
+        ).catch(() => {});
+      }
+
       return NextResponse.json({ milestone });
     }
 

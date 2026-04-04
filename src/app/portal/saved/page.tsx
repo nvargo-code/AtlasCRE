@@ -85,12 +85,17 @@ export default function SavedHomesPage() {
           {saved.map((item) => (
             <div key={item.id} className="bg-white border border-navy/10 flex overflow-hidden hover:shadow-md transition-shadow">
               {/* Image */}
-              <Link href={`/listings/${item.listing.id}`} className="w-32 md:w-48 flex-shrink-0">
+              <Link href={`/listings/${item.listing.id}`} className="w-32 md:w-48 flex-shrink-0 bg-navy/5">
                 {item.listing.imageUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={item.listing.imageUrl} alt="" className="w-full h-full object-cover" />
+                  <img
+                    src={item.listing.imageUrl}
+                    alt=""
+                    className="w-full h-full object-cover"
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; (e.target as HTMLImageElement).parentElement!.classList.add("flex", "items-center", "justify-center", "min-h-[100px]"); (e.target as HTMLImageElement).insertAdjacentHTML("afterend", "<span class='text-mid-gray text-[11px]'>No Photo</span>"); }}
+                  />
                 ) : (
-                  <div className="w-full h-full bg-navy/5 flex items-center justify-center min-h-[100px]">
+                  <div className="w-full h-full flex items-center justify-center min-h-[100px]">
                     <span className="text-mid-gray text-[11px]">No Photo</span>
                   </div>
                 )}
