@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
       }
     } else {
       // No email provider — log for manual handoff
-      console.log(`[reset-password] Password reset for ${email}: ${tempPassword}`);
+      console.log(`[reset-password] Password reset requested for ${email} (configure RESEND_API_KEY to send email)`);
     }
 
     return NextResponse.json({ success: true });

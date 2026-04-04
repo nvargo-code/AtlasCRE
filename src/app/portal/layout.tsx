@@ -6,7 +6,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-const navItems = [
+const baseNavItems = [
   { href: "/portal", label: "Dashboard", icon: "grid" },
   { href: "/portal/collections", label: "Collections", icon: "folder" },
   { href: "/portal/saved", label: "Saved Homes", icon: "heart" },
@@ -14,7 +14,6 @@ const navItems = [
   { href: "/portal/saved-searches", label: "Saved Searches", icon: "search" },
   { href: "/portal/showings", label: "Showings", icon: "calendar" },
   { href: "/portal/transactions", label: "Transactions", icon: "doc" },
-  { href: "/portal/seller", label: "Seller Hub", icon: "home" },
   { href: "/portal/messages", label: "Messages", icon: "chat" },
 ];
 
@@ -86,6 +85,14 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
     setNotifications((prev) => prev.map((n) => n.id === id ? { ...n, read: true } : n));
     setUnreadCount((prev) => Math.max(0, prev - 1));
   }
+
+  const isAgent = (session?.user as { role?: string })?.role === "AGENT" || (session?.user as { role?: string })?.role === "ADMIN";
+
+  // Build nav items based on role
+  const navItems = [
+    ...baseNavItems,
+    ...(isAgent ? [{ href: "/portal/seller", label: "Seller Hub", icon: "home" }] : []),
+  ];
 
   if (status === "loading" || !session) {
     return (
