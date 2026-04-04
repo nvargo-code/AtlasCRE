@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
 import Link from "next/link";
 
 interface Showing {
@@ -29,10 +30,21 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export default function ShowingsPage() {
+  const { data: session } = useSession();
+  const isAgent = (session?.user as { role?: string })?.role === "AGENT" || (session?.user as { role?: string })?.role === "ADMIN";
   const [showings, setShowings] = useState<Showing[]>([]);
   const [loading, setLoading] = useState(true);
   const [feedbackId, setFeedbackId] = useState<string | null>(null);
   const [feedbackData, setFeedbackData] = useState({ rating: 0, feedback: "", wouldOffer: false });
+
+  async function updateShowingStatus(showingId: string, status: string) {
+    await fetch("/api/portal/showings", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ showingId, status }),
+    });
+    loadShowings();
+  }
 
   useEffect(() => { loadShowings(); }, []);
 
@@ -134,6 +146,31 @@ export default function ShowingsPage() {
                         <p className="text-[11px] text-gold mt-1">
                           Agent: {showing.agent.name}
                         </p>
+                      )}
+                      {/* Agent actions */}
+                      {isAgent && showing.status === "requested" && (
+                        <div className="flex gap-1 mt-2">
+                          <button
+                            onClick={() => updateShowingStatus(showing.id, "confirmed")}
+                            className="text-[9px] font-semibold tracking-wider uppercase px-2 py-1 bg-green-50 text-green-700 hover:bg-green-100"
+                          >
+                            Confirm
+                          </button>
+                          <button
+                            onClick={() => updateShowingStatus(showing.id, "cancelled")}
+                            className="text-[9px] font-semibold tracking-wider uppercase px-2 py-1 bg-red-50 text-red-600 hover:bg-red-100"
+                          >
+                            Decline
+                          </button>
+                        </div>
+                      )}
+                      {isAgent && showing.status === "confirmed" && (
+                        <button
+                          onClick={() => updateShowingStatus(showing.id, "completed")}
+                          className="text-[9px] font-semibold tracking-wider uppercase px-2 py-1 bg-navy/5 text-navy/50 hover:text-navy mt-2"
+                        >
+                          Mark Complete
+                        </button>
                       )}
                     </div>
                   </div>

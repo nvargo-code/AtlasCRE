@@ -218,3 +218,27 @@ html {
   opacity: 1;
   transform: translateY(0);
 }
+
+/* Print styles */
+@media print {
+  /* Hide portal sidebar and mobile nav */
+  aside { display: none !important; }
+  .md\:hidden.fixed { display: none !important; }
+
+  /* Full width main content */
+  main { margin: 0 !important; padding: 0 !important; }
+  .min-h-screen { min-height: auto !important; }
+
+  /* Remove backgrounds for ink saving */
+  .bg-warm-gray { background: white !important; }
+  .bg-navy { background: #0a1628 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .bg-gold { background: #c9a96e !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+  /* Page breaks */
+  .print\:break-after-page { page-break-after: always; }
+  .print\:break-before-page { page-break-before: always; }
+
+  /* Hide interactive elements */
+  .print\:hidden { display: none !important; }
+  .hidden.print\:block { display: block !important; }
+}

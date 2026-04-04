@@ -119,7 +119,7 @@ export default function CMAPage() {
   return (
     <div className="p-6 md:p-10 max-w-[1400px] mx-auto">
       {/* Header */}
-      <div className="mb-8">
+      <div className="mb-8 print:hidden">
         <p className="text-gold text-[11px] font-semibold tracking-[0.2em] uppercase mb-2">Agent Tools</p>
         <h1 className="text-2xl md:text-3xl font-light text-navy">
           Comparative Market <span className="font-semibold">Analysis</span>
@@ -130,7 +130,7 @@ export default function CMAPage() {
       </div>
 
       {/* Search Form */}
-      <div className="bg-white border border-navy/10 p-6 mb-8">
+      <div className="bg-white border border-navy/10 p-6 mb-8 print:hidden">
         <h2 className="text-sm font-semibold text-navy mb-4 tracking-wide uppercase">Subject Property</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
           <div className="md:col-span-2">
@@ -229,6 +229,32 @@ export default function CMAPage() {
       {/* Results */}
       {result && (
         <>
+          {/* Print button */}
+          <div className="flex items-center justify-between mb-6 print:hidden">
+            <h2 className="text-lg font-semibold text-navy">CMA Results</h2>
+            <button
+              onClick={() => window.print()}
+              className="bg-navy text-white px-5 py-2.5 text-sm font-semibold tracking-[0.1em] uppercase hover:bg-navy/90 flex items-center gap-2"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
+              Print CMA Report
+            </button>
+          </div>
+
+          {/* Print header (only shows in print) */}
+          <div className="hidden print:block mb-8">
+            <div className="flex items-center justify-between border-b-2 border-navy pb-4 mb-4">
+              <div>
+                <h1 className="text-2xl font-bold text-navy">Comparative Market Analysis</h1>
+                <p className="text-mid-gray text-sm">{address || "Property Analysis"} &middot; {zip}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-navy font-semibold">Shapiro Group</p>
+                <p className="text-[11px] text-mid-gray">Powered by SuperSearch</p>
+              </div>
+            </div>
+          </div>
+
           {/* Subject Property */}
           {result.subject && (
             <div className="bg-gold/5 border border-gold/30 p-6 mb-6">

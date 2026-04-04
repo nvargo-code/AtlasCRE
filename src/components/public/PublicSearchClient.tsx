@@ -31,6 +31,7 @@ type SimpleListing = {
   imageUrl?: string | null;
   createdAt?: string;
   status?: string;
+  variants?: { source: { slug: string } }[];
 };
 
 function formatPrice(amount: number | null, unit: string | null): string {
@@ -694,6 +695,11 @@ function SearchContent() {
                     {listing.createdAt && (Date.now() - new Date(listing.createdAt).getTime()) < 3 * 24 * 60 * 60 * 1000 && (
                       <span className="text-[9px] font-semibold tracking-wider uppercase bg-green-50 text-green-700 px-1.5 py-0.5">
                         New
+                      </span>
+                    )}
+                    {listing.variants?.some((v) => ["aln", "manual"].includes(v.source.slug)) && (
+                      <span className="text-[9px] font-semibold tracking-wider uppercase bg-gold/10 text-gold px-1.5 py-0.5">
+                        Exclusive
                       </span>
                     )}
                   </div>
