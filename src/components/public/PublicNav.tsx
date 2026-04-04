@@ -4,12 +4,15 @@ import Link from "next/link";
 import Image from "next/image";
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
+import { useSession } from "next-auth/react";
 
 // Pages with dark (navy) hero backgrounds where nav should start transparent
 const DARK_HERO_PAGES = ["/", "/buy", "/sell", "/team", "/about", "/contact", "/careers", "/blog", "/exclusive", "/valuation", "/find", "/privacy", "/investment", "/terms", "/fair-housing", "/condos", "/luxury", "/new-construction", "/join"];
 
 export function PublicNav() {
   const pathname = usePathname();
+  const { data: session } = useSession();
+  const isLoggedIn = !!session;
   const hasDarkHero = DARK_HERO_PAGES.includes(pathname) || pathname.startsWith("/neighborhoods/");
   const [scrolled, setScrolled] = useState(!hasDarkHero);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -97,13 +100,20 @@ export function PublicNav() {
 
               <Link
                 href="/portal"
-                className={`hidden lg:inline-flex text-[12px] font-medium tracking-[0.1em] uppercase transition-colors duration-300 ${
+                className={`hidden lg:inline-flex items-center gap-1.5 text-[12px] font-medium tracking-[0.1em] uppercase transition-colors duration-300 ${
                   scrolled
-                    ? "text-navy/60 hover:text-navy"
-                    : "text-white/60 hover:text-white"
+                    ? isLoggedIn ? "text-gold hover:text-gold-dark" : "text-navy/60 hover:text-navy"
+                    : isLoggedIn ? "text-gold hover:text-gold-dark" : "text-white/60 hover:text-white"
                 }`}
               >
-                Sign In
+                {isLoggedIn ? (
+                  <>
+                    <span className="w-5 h-5 rounded-full bg-gold/20 flex items-center justify-center text-[9px] font-bold text-gold">
+                      {(session.user?.name?.[0] || session.user?.email?.[0] || "U").toUpperCase()}
+                    </span>
+                    My Portal
+                  </>
+                ) : "Sign In"}
               </Link>
 
               {/* Mobile hamburger */}
@@ -157,7 +167,7 @@ export function PublicNav() {
             { href: "/neighborhoods", label: "Neighborhoods" },
             { href: "/careers", label: "Careers" },
             { href: "/contact", label: "Contact" },
-            { href: "/portal", label: "Sign In" },
+            { href: "/portal", label: isLoggedIn ? "My Portal" : "Sign In" },
           ].map((link) => (
             <Link
               key={link.href}
