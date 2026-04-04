@@ -1,9 +1,32 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+
+interface LiveListing {
+  id: string;
+  address: string;
+  city: string;
+  priceAmount: number | null;
+  beds: number | null;
+  baths: number | null;
+  buildingSf: number | null;
+}
 
 export default function EmailPreviewPage() {
-  const [previewType, setPreviewType] = useState<"alert" | "welcome" | "showing">("alert");
+  const [previewType, setPreviewType] = useState<"alert" | "welcome" | "showing" | "live">("alert");
+  const [liveListings, setLiveListings] = useState<LiveListing[]>([]);
+
+  useEffect(() => {
+    // Fetch recent listings for live preview
+    fetch("/api/listings?searchMode=residential&limit=5")
+      .then((r) => r.ok ? r.json() : { listings: [] })
+      .then((data) => setLiveListings((data.listings || []).slice(0, 5).map((l: LiveListing) => ({
+        ...l,
+        priceAmount: l.priceAmount ? Number(l.priceAmount) : null,
+        buildingSf: l.buildingSf ? Number(l.buildingSf) : null,
+      }))))
+      .catch(() => {});
+  }, []);
 
   const baseUrl = typeof window !== "undefined" ? window.location.origin : "https://supersearch-production.up.railway.app";
 
@@ -86,6 +109,39 @@ export default function EmailPreviewPage() {
     },
   };
 
+  // Build live email from real listings
+  const liveListingRows = liveListings.map((l) => {
+    const price = l.priceAmount
+      ? l.priceAmount >= 1_000_000 ? `$${(l.priceAmount / 1_000_000).toFixed(1)}M` : `$${l.priceAmount.toLocaleString()}`
+      : "Contact";
+    const details = [l.beds ? `${l.beds} bed` : "", l.baths ? `${l.baths} bath` : "", l.buildingSf ? `${l.buildingSf.toLocaleString()} SF` : ""].filter(Boolean).join(" · ");
+    return `<tr><td style="padding: 12px 0; border-bottom: 1px solid #f0f0f0;"><a href="${baseUrl}/listings/${l.id}" style="color: #0a1628; text-decoration: none;"><strong style="font-size: 16px;">${price}</strong><br/><span style="color: #555; font-size: 14px;">${l.address}, ${l.city}</span><br/><span style="color: #999; font-size: 12px;">${details}</span></a></td></tr>`;
+  }).join("");
+
+  templates.live = {
+    subject: `${liveListings.length} new listings match your saved search — Shapiro Group`,
+    html: `
+      <div style="max-width: 600px; margin: 0 auto; background: white; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+        <div style="background-color: #0a1628; padding: 32px; text-align: center;">
+          <img src="${baseUrl}/images/logos/sg-horizontal-white.png" alt="Shapiro Group" style="height: 32px;" />
+        </div>
+        <div style="padding: 32px;">
+          <p style="color: #0a1628; font-size: 18px; margin-bottom: 4px;">Hi there,</p>
+          <p style="color: #666; font-size: 15px; margin-bottom: 32px;">We found <strong>${liveListings.length} new listings</strong> matching your saved search. These are <strong>real listings</strong> from your database.</p>
+          <div style="margin-bottom: 32px;">
+            <h3 style="color: #c9a96e; font-size: 12px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px;">Recent Listings</h3>
+            <table style="width: 100%; border-collapse: collapse;">${liveListingRows}</table>
+          </div>
+          <div style="text-align: center; margin-top: 32px;">
+            <a href="${baseUrl}/search" style="background-color: #c9a96e; color: white; padding: 14px 32px; text-decoration: none; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Search All Listings</a>
+          </div>
+        </div>
+        <div style="background-color: #f8f8f6; padding: 24px 32px; text-align: center;">
+          <p style="color: #999; font-size: 12px; margin: 0;">Shapiro Group · Austin, TX<br/><a href="${baseUrl}/portal/saved-searches" style="color: #c9a96e;">Manage alert preferences</a></p>
+        </div>
+      </div>`,
+  };
+
   const current = templates[previewType];
 
   return (
@@ -101,6 +157,7 @@ export default function EmailPreviewPage() {
       {/* Template selector */}
       <div className="flex gap-2 mb-6">
         {([
+          { key: "live" as const, label: "Live Preview" },
           { key: "alert" as const, label: "Listing Alert" },
           { key: "welcome" as const, label: "Welcome" },
           { key: "showing" as const, label: "Showing Confirmed" },
