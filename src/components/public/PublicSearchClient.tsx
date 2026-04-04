@@ -119,6 +119,17 @@ function SearchContent() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Dynamic page title based on search results
+  useEffect(() => {
+    if (totalCount > 0) {
+      const area = query || (filters.market === "dfw" ? "DFW" : "Austin");
+      document.title = `${totalCount.toLocaleString()} ${mode === "residential" ? "Homes" : "Properties"} in ${area} | SuperSearch`;
+    } else {
+      document.title = "SuperSearch | Find More Listings Than Zillow | Shapiro Group";
+    }
+    return () => { document.title = "SuperSearch | Shapiro Group | Austin Real Estate"; };
+  }, [totalCount, query, mode, filters.market]);
+
   // Keyboard shortcuts
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 
 const baseNavItems = [
   { href: "/portal", label: "Dashboard", icon: "grid" },
@@ -245,9 +245,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
       <MobileNav pathname={pathname} userRole={(session?.user as { role?: string })?.role} />
 
       {/* Main content */}
-      <main className="flex-1 overflow-auto pb-20 md:pb-0">
-        {children}
-      </main>
+      <PortalMain pathname={pathname}>{children}</PortalMain>
     </div>
   );
 }
@@ -336,5 +334,19 @@ function MobileNav({ pathname, userRole }: { pathname: string; userRole?: string
         </button>
       </div>
     </>
+  );
+}
+
+function PortalMain({ pathname, children }: { pathname: string; children: React.ReactNode }) {
+  const ref = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    if (ref.current) ref.current.scrollTo(0, 0);
+  }, [pathname]);
+
+  return (
+    <main ref={ref} className="flex-1 overflow-auto pb-20 md:pb-0">
+      {children}
+    </main>
   );
 }
