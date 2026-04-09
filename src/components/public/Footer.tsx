@@ -62,8 +62,6 @@ export function Footer() {
                 { href: "/sell", label: "Sell a Home" },
                 { href: "/investment", label: "Invest" },
                 { href: "/valuation", label: "Home Valuation" },
-                { href: "/mls", label: "MLS Search" },
-                { href: "/sold", label: "Recently Sold" },
                 { href: "/search?searchMode=residential", label: "Residential" },
                 { href: "/search?searchMode=commercial", label: "Commercial" },
               ].map((link) => (
