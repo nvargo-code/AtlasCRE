@@ -127,18 +127,53 @@ async function login(page: Page): Promise<void> {
   }
 }
 
+// ── Geocoding cache ───────────────────────────────────────────────────────────
+
+const GEOCACHE_FILE = "/opt/atlas-scraper/geocache.json";
+let geocache: Record<string, { lat: number; lng: number }> = {};
+
+function loadGeocache(): void {
+  try {
+    const fs = require("fs");
+    if (fs.existsSync(GEOCACHE_FILE)) {
+      geocache = JSON.parse(fs.readFileSync(GEOCACHE_FILE, "utf8"));
+      console.log(`[aln] Loaded geocache: ${Object.keys(geocache).length} entries`);
+    }
+  } catch {}
+}
+
+function saveGeocache(): void {
+  try {
+    const fs = require("fs");
+    fs.writeFileSync(GEOCACHE_FILE, JSON.stringify(geocache));
+  } catch {}
+}
+
 // ── Geocoding ─────────────────────────────────────────────────────────────────
 
 async function geocodeAddress(address: string, city: string, state: string): Promise<{ lat: number; lng: number } | null> {
+  const key = `${address}|${city}|${state}`.toLowerCase();
+  if (geocache[key]) return geocache[key];
+
+  const token = process.env.MAPBOX_TOKEN;
+  if (!token) {
+    console.warn("[aln] MAPBOX_TOKEN not set — skipping geocode");
+    return null;
+  }
+
   try {
     const q = encodeURIComponent(`${address}, ${city}, ${state}`);
     const res = await fetch(
-      `https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=1`,
-      { headers: { "User-Agent": "AtlasCRE/1.0 (internal)" }, signal: AbortSignal.timeout(5000) }
+      `https://api.mapbox.com/geocoding/v5/mapbox.places/${q}.json?access_token=${token}&limit=1&country=US`,
+      { signal: AbortSignal.timeout(10000) }
     );
-    const data = await res.json() as Array<{ lat: string; lon: string }>;
-    if (!data.length) return null;
-    return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+    const data = await res.json() as { features: Array<{ center: [number, number] }> };
+    if (!data.features?.length) return null;
+    const [lng, lat] = data.features[0].center;
+    const result = { lat, lng };
+    geocache[key] = result;
+    saveGeocache();
+    return result;
   } catch {
     return null;
   }
@@ -146,88 +181,111 @@ async function geocodeAddress(address: string, city: string, state: string): Pro
 
 // ── Page scraper ──────────────────────────────────────────────────────────────
 
+interface RawCard {
+  addressText: string;
+  priceText: string;
+  sqftText: string;
+  typeText: string;
+  brokerText: string;
+  img: string;
+  link: string;
+  fullText: string;
+}
+
 async function scrapeListingsPage(page: Page): Promise<NormalizedListing[]> {
-  const listings: NormalizedListing[] = [];
-  await page.waitForTimeout(3000);
+  await page.waitForTimeout(1500);
   const url = page.url();
   console.log("[aln] Scraping page:", url);
 
-  const cardSelector = [
-    ".listing-card", ".property-card", ".listing-item", ".property-item",
-    "[class*='listing']", "[class*='property']", "article",
-  ].join(", ");
+  // Batch extract all card data in one browser call
+  // Use :not() to avoid matching nested elements inside cards
+  const rawCards: RawCard[] = await page.$$eval(
+    "article, .listing-card, .property-card, .listing-item, .property-item",
+    (els) => els.map((el) => {
+      const t = (sel: string) => el.querySelector(sel)?.textContent?.trim() ?? "";
+      const a = (sel: string, attr: string) => (el.querySelector(sel) as HTMLElement | null)?.getAttribute(attr) ?? "";
+      // Full text of the element for address fallback
+      const fullText = el.textContent?.trim() ?? "";
+      return {
+        addressText: t(".address, [class*='address'], [data-field='address']") || t("h2, h3, h4") || fullText.split("\n")[0],
+        priceText:   t(".price, [class*='price'], [data-field='price']"),
+        sqftText:    t(".sqft, [class*='sqft'], [class*='size'], [data-field='sqft']"),
+        typeText:    t(".type, [class*='type'], [class*='property-type']"),
+        brokerText:  t(".broker, [class*='broker'], [class*='agent']"),
+        img:         a("img", "src"),
+        link:        a("a", "href"),
+        fullText,
+      };
+    })
+  ).catch(() => [] as RawCard[]);
 
-  const cards = await page.$$(cardSelector);
-  console.log(`[aln] Found ${cards.length} potential listing elements`);
+  console.log(`[aln] Found ${rawCards.length} potential listing elements`);
 
-  for (const card of cards) {
-    try {
-      const getText = async (sel: string) =>
-        (await card.$eval(sel, (el) => el.textContent?.trim() ?? "").catch(() => ""));
-      const getAttr = async (sel: string, attr: string) =>
-        (await card.$eval(sel, (el, a) => el.getAttribute(a) ?? "", attr).catch(() => ""));
-
-      const addressText = await getText(".address, [class*='address'], [data-field='address']")
-        || await getText("h2, h3, h4");
-      if (!addressText) continue;
-
-      const priceText = await getText(".price, [class*='price'], [data-field='price']");
-      const sqftText = await getText(".sqft, [class*='sqft'], [class*='size'], [data-field='sqft']");
-      const typeText = await getText(".type, [class*='type'], [class*='property-type']");
-      const brokerText = await getText(".broker, [class*='broker'], [class*='agent']");
-      const img = await getAttr("img", "src");
-      const link = await getAttr("a", "href");
-
-      const parts = addressText.split(",").map((s: string) => s.trim());
-      const address = parts[0] ?? addressText;
-      const city = parts[1] ?? "Austin";
+  // Parse card data (sync, no I/O)
+  // ALN address format: "10221 David Moore\n\nAustin , TX 78748"
+  const seen = new Set<string>();
+  const parsed = rawCards
+    .filter((c) => !!c.addressText)
+    .map((c) => {
+      // Split on newlines first, then fall back to comma splitting
+      const lines = c.addressText.split(/\n+/).map((s) => s.trim()).filter(Boolean);
+      const address = lines[0] ?? c.addressText;
+      const cityLine = lines[1] ?? "";
+      const cityMatch = cityLine.match(/^([^,]+)/);
+      const city = cityMatch?.[1]?.trim().replace(/\s+/g, " ") || "Austin";
 
       let priceAmount: number | undefined;
-      if (priceText) {
-        const cleaned = priceText.replace(/[^0-9.]/g, "");
-        const val = parseFloat(cleaned);
+      if (c.priceText) {
+        const val = parseFloat(c.priceText.replace(/[^0-9.]/g, ""));
         if (!isNaN(val)) {
-          priceAmount = priceText.includes("M") ? val * 1_000_000
-            : priceText.includes("K") ? val * 1_000
+          priceAmount = c.priceText.includes("M") ? val * 1_000_000
+            : c.priceText.includes("K") ? val * 1_000
             : val;
         }
       }
 
       let buildingSf: number | undefined;
-      if (sqftText) {
-        const match = sqftText.match(/([\d,]+)/);
-        if (match) buildingSf = parseInt(match[1].replace(/,/g, ""));
-      }
+      const sfMatch = c.sqftText.match(/([\d,]+)/);
+      if (sfMatch) buildingSf = parseInt(sfMatch[1].replace(/,/g, ""));
 
-      const geo = await geocodeAddress(address, city, "TX");
-      if (!geo) continue;
-      await new Promise((r) => setTimeout(r, 250));
-
-      const sourceUrl = link?.startsWith("http") ? link : link ? `${ALN_BASE}${link}` : undefined;
+      const sourceUrl = c.link?.startsWith("http") ? c.link : c.link ? `${ALN_BASE}${c.link}` : undefined;
       const id = sourceUrl ? sourceUrl.split("/").filter(Boolean).pop() ?? address : address;
 
-      listings.push({
-        externalId: id.replace(/\s+/g, "-").toLowerCase(),
-        sourceSlug: "aln",
-        address,
-        city,
-        state: "TX",
-        lat: geo.lat,
-        lng: geo.lng,
-        market: "austin",
-        propertyType: typeText || "Residential",
-        listingType: "sale",
-        buildingSf,
-        priceAmount,
-        priceUnit: "total",
-        brokerName: brokerText || undefined,
-        imageUrl: img || undefined,
-        sourceUrl,
-        rawData: { addressText, priceText, sqftText, typeText, brokerText },
-      });
-    } catch (err) {
-      console.warn("[aln] Error parsing card:", err);
-    }
+      return { address, city, priceAmount, buildingSf, sourceUrl, id, c };
+    })
+    .filter((p) => {
+      // Deduplicate by address
+      if (seen.has(p.address.toLowerCase())) return false;
+      seen.add(p.address.toLowerCase());
+      return true;
+    });
+
+  console.log(`[aln] ${parsed.length} unique listings after dedup`);
+
+  // Geocode sequentially — Nominatim allows 1 req/s; cache means most are instant
+  const listings: NormalizedListing[] = [];
+  for (const p of parsed) {
+    const geo = await geocodeAddress(p.address, p.city, "TX");
+    if (!geo) continue;
+    listings.push({
+      externalId: p.id.replace(/\s+/g, "-").toLowerCase(),
+      sourceSlug: "aln",
+      address: p.address,
+      city: p.city,
+      state: "TX",
+      lat: geo.lat,
+      lng: geo.lng,
+      market: "austin",
+      propertyType: p.c.typeText || "Residential",
+      listingType: "sale",
+      buildingSf: p.buildingSf,
+      priceAmount: p.priceAmount,
+      priceUnit: "total",
+      brokerName: p.c.brokerText || undefined,
+      imageUrl: p.c.img || undefined,
+      sourceUrl: p.sourceUrl,
+      rawData: { addressText: p.c.addressText, priceText: p.c.priceText, sqftText: p.c.sqftText, typeText: p.c.typeText, brokerText: p.c.brokerText },
+    });
   }
 
   return listings;
@@ -236,6 +294,7 @@ async function scrapeListingsPage(page: Page): Promise<NormalizedListing[]> {
 // ── Main export ───────────────────────────────────────────────────────────────
 
 export async function scrapeALN(browser: Browser): Promise<NormalizedListing[]> {
+  loadGeocache();
   const context = await browser.newContext({
     userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
     viewport: { width: 1280, height: 900 },
@@ -288,19 +347,28 @@ export async function scrapeALN(browser: Browser): Promise<NormalizedListing[]> 
     listings.push(...pageListings);
     savePartial();
 
+    // Navigate directly by URL — avoids hanging on next-button click/navigation
     let pageNum = 2;
-    while (pageNum <= 10) {
-      const nextBtn = await page.$("[aria-label='Next'], .next, [rel='next'], a[href*='page=" + pageNum + "']");
-      if (!nextBtn) break;
+    while (pageNum <= 50) {
+      const pageUrl = `${ALN_BASE}/listings?page=${pageNum}`;
+      try {
+        await page.goto(pageUrl, { waitUntil: "domcontentloaded", timeout: 10000 });
+      } catch {
+        console.log(`[aln] Page ${pageNum} load timed out — stopping`);
+        break;
+      }
 
-      await Promise.all([
-        page.waitForNavigation({ waitUntil: "domcontentloaded", timeout: 15000 }).catch(() => {}),
-        nextBtn.click(),
-      ]);
-      await page.waitForTimeout(2000);
+      // If redirected away from the page URL, we've hit the end
+      if (!page.url().includes(`page=${pageNum}`)) {
+        console.log(`[aln] No more pages after page ${pageNum - 1}`);
+        break;
+      }
 
       const more = await scrapeListingsPage(page);
-      if (more.length === 0) break;
+      if (more.length === 0) {
+        console.log(`[aln] Page ${pageNum} returned 0 listings — stopping`);
+        break;
+      }
       listings.push(...more);
       savePartial();
       pageNum++;
