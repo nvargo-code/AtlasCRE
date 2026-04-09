@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Map } from "@/components/Map";
 import { ListingFilters, ListingWithVariants } from "@/types";
+import { getSourceTag } from "@/lib/source-tags";
 import { RegistrationGate } from "@/components/public/RegistrationGate";
 import { SaveSearchAlert } from "@/components/public/SaveSearchAlert";
 import { CompareDrawer } from "@/components/public/CompareDrawer";
@@ -713,6 +714,14 @@ function SearchContent() {
                         Exclusive
                       </span>
                     )}
+                    {listing.variants?.map((v) => {
+                      const tag = getSourceTag(v.source.slug);
+                      return (
+                        <span key={v.source.slug} className={`text-[9px] font-semibold tracking-wider uppercase ${tag.bg} ${tag.text} px-1.5 py-0.5`}>
+                          {tag.label}
+                        </span>
+                      );
+                    })}
                   </div>
                   <div className="flex items-center justify-between mt-1">
                     <div className="flex items-center gap-3 text-[12px] text-mid-gray">

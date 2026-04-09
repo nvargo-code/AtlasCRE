@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { RevealSection } from "./RevealSection";
+import { getSourceTag } from "@/lib/source-tags";
 import { MortgageCalculator } from "./MortgageCalculator";
 import { ShareButtons } from "./ShareButtons";
 import { ListingMap } from "./ListingMap";
@@ -167,6 +168,14 @@ export function ListingDetailClient({ listing, similarListings = [] }: { listing
                   <span className="text-[12px] font-semibold tracking-[0.12em] uppercase bg-gold/10 text-gold px-4 py-1.5">
                     For {listing.listingType}
                   </span>
+                  {listing.variants.map((v) => {
+                    const tag = getSourceTag(v.sourceSlug);
+                    return (
+                      <span key={v.sourceSlug} className={`text-[10px] font-semibold tracking-wider uppercase ${tag.bg} ${tag.text} px-2.5 py-1`}>
+                        {tag.label}
+                      </span>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -297,7 +306,10 @@ export function ListingDetailClient({ listing, similarListings = [] }: { listing
                         key={v.id}
                         className="flex items-center justify-between p-4 bg-warm-gray"
                       >
-                        <div>
+                        <div className="flex items-center gap-2">
+                          <span className={`text-[9px] font-semibold tracking-wider uppercase ${getSourceTag(v.sourceSlug).bg} ${getSourceTag(v.sourceSlug).text} px-1.5 py-0.5`}>
+                            {getSourceTag(v.sourceSlug).label}
+                          </span>
                           <p className="text-navy font-medium">{v.sourceName}</p>
                           {v.brokerName && (
                             <p className="text-mid-gray text-sm mt-0.5">

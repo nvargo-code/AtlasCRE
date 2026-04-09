@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getSourceTag } from "@/lib/source-tags";
 
 interface ListingCardProps {
   id: string;
@@ -14,6 +15,7 @@ interface ListingCardProps {
   imageUrl?: string | null;
   listingType: string;
   featured?: boolean;
+  sources?: string[];
 }
 
 export function ListingCard({
@@ -27,6 +29,7 @@ export function ListingCard({
   buildingSf,
   imageUrl,
   featured,
+  sources,
 }: ListingCardProps) {
   return (
     <Link
@@ -63,6 +66,18 @@ export function ListingCard({
         <span className="absolute top-3 left-3 bg-gold text-white text-[10px] font-semibold tracking-[0.1em] uppercase px-3 py-1">
           {listingType}
         </span>
+        {sources && sources.length > 0 && (
+          <div className="absolute top-3 right-3 flex gap-1">
+            {sources.map((slug) => {
+              const tag = getSourceTag(slug);
+              return (
+                <span key={slug} className={`text-[9px] font-semibold tracking-wider uppercase ${tag.bg} ${tag.text} px-1.5 py-0.5 backdrop-blur-sm`}>
+                  {tag.label}
+                </span>
+              );
+            })}
+          </div>
+        )}
       </div>
       <div className="p-5">
         <p className="text-lg font-semibold text-navy group-hover:text-gold transition-colors mb-1">
