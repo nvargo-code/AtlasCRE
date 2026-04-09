@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Map } from "@/components/Map";
 import { ListingFilters, ListingWithVariants } from "@/types";
-import { getSourceTag } from "@/lib/source-tags";
+import { getSourceTag, SOURCE_FILTER_OPTIONS } from "@/lib/source-tags";
 import { RegistrationGate } from "@/components/public/RegistrationGate";
 import { SaveSearchAlert } from "@/components/public/SaveSearchAlert";
 import { CompareDrawer } from "@/components/public/CompareDrawer";
@@ -52,9 +52,7 @@ function SearchContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const [mode, setMode] = useState<"residential" | "commercial">(
-    (searchParams.get("searchMode") as "residential" | "commercial") || "residential"
-  );
+  const mode = "residential" as const;
   const [query, setQuery] = useState(searchParams.get("q") || "");
   const [filters, setFilters] = useState<ListingFilters>({});
   const [geojson, setGeojson] = useState<GeoJSON.FeatureCollection | null>(null);
@@ -116,6 +114,8 @@ function SearchContent() {
     if (pst) f.propSubType = pst.split(",") as ListingFilters["propSubType"];
     const yb = searchParams.get("yearBuiltMin");
     if (yb) f.yearBuiltMin = Number(yb);
+    const src = searchParams.get("sources");
+    if (src) f.sources = src.split(",");
     setFilters(f);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -178,6 +178,7 @@ function SearchContent() {
     if (f.bedsMin) params.set("bedsMin", f.bedsMin.toString());
     if (f.bathsMin) params.set("bathsMin", f.bathsMin.toString());
     if (f.propSubType?.length) params.set("propSubType", f.propSubType.join(","));
+    if (f.sources?.length) params.set("sources", f.sources.join(","));
 
     const bounds = boundsRef.current;
     if (bounds) {
@@ -250,6 +251,7 @@ function SearchContent() {
     if (filters.sfMin) params.set("sfMin", filters.sfMin.toString());
     if (filters.yearBuiltMin) params.set("yearBuiltMin", filters.yearBuiltMin.toString());
     if (filters.propSubType?.length) params.set("propSubType", filters.propSubType.join(","));
+    if (filters.sources?.length) params.set("sources", filters.sources.join(","));
     const url = params.toString() ? `/search?${params.toString()}` : "/search";
     router.replace(url, { scroll: false });
   }, [filters, router]);
@@ -271,6 +273,7 @@ function SearchContent() {
     if (f.propSubType?.length) params.set("propSubType", f.propSubType.join(","));
     if (f.sfMin) params.set("sfMin", f.sfMin.toString());
     if (f.yearBuiltMin) params.set("yearBuiltMin", f.yearBuiltMin.toString());
+    if (f.sources?.length) params.set("sources", f.sources.join(","));
     const bounds = boundsRef.current;
     if (bounds) {
       params.set("north", bounds.north.toString());
@@ -300,7 +303,7 @@ function SearchContent() {
 
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
-    const newFilters = { ...filters, searchMode: mode as "residential" | "commercial", query: query || undefined };
+    const newFilters = { ...filters, searchMode: mode, query: query || undefined };
     setFilters(newFilters);
     const params = new URLSearchParams();
     params.set("searchMode", mode);
@@ -328,24 +331,6 @@ function SearchContent() {
           </div>
 
           <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-0">
-            {/* Mode toggle */}
-            <div className="flex">
-              {(["residential", "commercial"] as const).map((m) => (
-                <button
-                  key={m}
-                  type="button"
-                  onClick={() => { setMode(m); setFilters({ ...filters, searchMode: m }); }}
-                  className={`px-5 py-3 text-[12px] font-semibold tracking-[0.1em] uppercase transition-all ${
-                    mode === m
-                      ? "bg-white text-navy"
-                      : "bg-white/10 text-white/60 hover:bg-white/20"
-                  }`}
-                >
-                  {m}
-                </button>
-              ))}
-            </div>
-
             <div className="flex-1 relative">
               <input
                 type="text"
@@ -419,9 +404,6 @@ function SearchContent() {
 
           {/* Quick filters */}
           <div className="flex flex-wrap gap-3 mt-4">
-            {mode === "residential" ? (
-              <>
-                {/* Residential filters */}
                 <select
                   className="bg-white/5 border border-white/20 text-white/70 text-[12px] tracking-wider px-4 py-2 focus:outline-none focus:border-gold"
                   onChange={(e) => setFilters({ ...filters, priceMax: e.target.value ? Number(e.target.value) : undefined })}
@@ -454,63 +436,6 @@ function SearchContent() {
                   <option value="3">3+</option>
                   <option value="4">4+</option>
                 </select>
-              </>
-            ) : (
-              <>
-                {/* Commercial filters */}
-                <select
-                  className="bg-white/5 border border-white/20 text-white/70 text-[12px] tracking-wider px-4 py-2 focus:outline-none focus:border-gold"
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    setFilters({ ...filters, propertyType: val ? [val] as ListingFilters["propertyType"] : undefined });
-                  }}
-                >
-                  <option value="">Property Type</option>
-                  <option value="Office">Office</option>
-                  <option value="Retail">Retail</option>
-                  <option value="Industrial">Industrial</option>
-                  <option value="Multifamily">Multifamily</option>
-                  <option value="Land">Land</option>
-                  <option value="Mixed Use">Mixed Use</option>
-                  <option value="Hospitality">Hospitality</option>
-                </select>
-                <select
-                  className="bg-white/5 border border-white/20 text-white/70 text-[12px] tracking-wider px-4 py-2 focus:outline-none focus:border-gold"
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    setFilters({ ...filters, listingType: val ? [val] as ListingFilters["listingType"] : undefined });
-                  }}
-                >
-                  <option value="">Sale / Lease</option>
-                  <option value="Sale">For Sale</option>
-                  <option value="Lease">For Lease</option>
-                  <option value="Sublease">Sublease</option>
-                </select>
-                <select
-                  className="bg-white/5 border border-white/20 text-white/70 text-[12px] tracking-wider px-4 py-2 focus:outline-none focus:border-gold"
-                  onChange={(e) => setFilters({ ...filters, priceMax: e.target.value ? Number(e.target.value) : undefined })}
-                >
-                  <option value="">Any Price</option>
-                  <option value="500000">Under $500K</option>
-                  <option value="1000000">Under $1M</option>
-                  <option value="5000000">Under $5M</option>
-                  <option value="10000000">Under $10M</option>
-                  <option value="25000000">Under $25M</option>
-                </select>
-                <select
-                  className="bg-white/5 border border-white/20 text-white/70 text-[12px] tracking-wider px-4 py-2 focus:outline-none focus:border-gold"
-                  onChange={(e) => setFilters({ ...filters, sfMin: e.target.value ? Number(e.target.value) : undefined })}
-                >
-                  <option value="">Min SF</option>
-                  <option value="1000">1,000+ SF</option>
-                  <option value="5000">5,000+ SF</option>
-                  <option value="10000">10,000+ SF</option>
-                  <option value="25000">25,000+ SF</option>
-                  <option value="50000">50,000+ SF</option>
-                </select>
-              </>
-            )}
-            {/* Shared filters */}
             <select
               className="bg-white/5 border border-white/20 text-white/70 text-[12px] tracking-wider px-4 py-2 focus:outline-none focus:border-gold"
               onChange={(e) => setFilters({ ...filters, market: e.target.value as "austin" | "dfw" | undefined || undefined })}
@@ -530,7 +455,6 @@ function SearchContent() {
               <option value="1990">1990+</option>
               <option value="1980">1980+</option>
             </select>
-            {mode === "residential" && (
               <select
                 className="bg-white/5 border border-white/20 text-white/70 text-[12px] tracking-wider px-4 py-2 focus:outline-none focus:border-gold"
                 onChange={(e) => setFilters({ ...filters, sfMin: e.target.value ? Number(e.target.value) : undefined })}
@@ -542,13 +466,21 @@ function SearchContent() {
                 <option value="2500">2,500+ SF</option>
                 <option value="3000">3,000+ SF</option>
               </select>
-            )}
+            <select
+              className="bg-white/5 border border-white/20 text-white/70 text-[12px] tracking-wider px-4 py-2 focus:outline-none focus:border-gold"
+              onChange={(e) => setFilters({ ...filters, sources: e.target.value ? [e.target.value] : undefined })}
+            >
+              <option value="">All Sources</option>
+              {SOURCE_FILTER_OPTIONS.map((s) => (
+                <option key={s.slug} value={s.slug}>{s.label}</option>
+              ))}
+            </select>
           </div>
         </div>
       </div>
 
       {/* SuperSearch comparison bar */}
-      {mode === "residential" && (totalCount > 0 || zillowLoading) && (
+      {(totalCount > 0 || zillowLoading) && (
         <div className="bg-warm-gray border-b border-navy/10">
           <div className="max-w-[1400px] mx-auto px-6 md:px-10 py-4">
             <div className="flex items-center justify-between flex-wrap gap-4">

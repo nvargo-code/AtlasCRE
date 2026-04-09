@@ -25,6 +25,22 @@ export const SOURCE_TAGS: Record<string, { label: string; bg: string; text: stri
   manual:          { label: "Manual",        bg: "bg-gray-100",   text: "text-gray-600" },
 };
 
+/** Deduplicated options for source filter dropdowns (merges abor → mls) */
+export const SOURCE_FILTER_OPTIONS = [
+  { slug: "mls",        label: "MLS" },
+  { slug: "realtor",    label: "Realtor" },
+  { slug: "zillow",     label: "Zillow" },
+  { slug: "zfsbo",      label: "ZFSBO" },
+  { slug: "zcomingsoon", label: "Z-Coming Soon" },
+  { slug: "aln",        label: "ALN" },
+  { slug: "email",      label: "Email" },
+  { slug: "clubhouse",  label: "Clubhouse" },
+  { slug: "atxpocket",  label: "ATX Pocket" },
+  { slug: "kuw",        label: "KUW" },
+  { slug: "ubs",        label: "UBS" },
+  { slug: "manual",     label: "Manual" },
+];
+
 export function getSourceTag(slug: string) {
   return SOURCE_TAGS[slug] ?? { label: slug.toUpperCase(), bg: "bg-gray-100", text: "text-gray-500" };
 }
