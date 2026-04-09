@@ -73,7 +73,7 @@ export async function GET(req: NextRequest) {
   }
 
   // Standard paginated list
-  const [listings, total] = await Promise.all([
+  const [listings, total, sourceCountsRaw] = await Promise.all([
     prisma.listing.findMany({
       where,
       include: {
@@ -86,10 +86,31 @@ export async function GET(req: NextRequest) {
       orderBy: { updatedAt: "desc" },
     }),
     prisma.listing.count({ where }),
+    prisma.listingVariant.groupBy({
+      by: ["sourceId"],
+      _count: true,
+      where: { listing: where },
+    }),
   ]);
+
+  // Resolve source slugs for the counts
+  const sourceIds = sourceCountsRaw.map((s) => s.sourceId);
+  const sourceLookup = sourceIds.length
+    ? await prisma.listingSource.findMany({
+        where: { id: { in: sourceIds } },
+        select: { id: true, slug: true },
+      })
+    : [];
+  const idToSlug = Object.fromEntries(sourceLookup.map((s) => [s.id, s.slug]));
+  const sourceCounts: Record<string, number> = {};
+  for (const row of sourceCountsRaw) {
+    const slug = idToSlug[row.sourceId];
+    if (slug) sourceCounts[slug] = (sourceCounts[slug] || 0) + row._count;
+  }
 
   return NextResponse.json({
     listings,
     pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+    sourceCounts,
   });
 }

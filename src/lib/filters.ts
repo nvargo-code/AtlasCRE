@@ -4,11 +4,7 @@ import { ListingFilters } from "@/types";
 export function buildListingWhere(filters: ListingFilters): Prisma.ListingWhereInput {
   const where: Prisma.ListingWhereInput = {};
 
-  if (filters.searchMode) {
-    where.searchMode = filters.searchMode;
-  } else {
-    where.searchMode = "commercial";
-  }
+  // Residential-only platform — no searchMode filter needed
 
   if (filters.market) {
     where.market = filters.market;

@@ -129,7 +129,7 @@ export async function runIngestion(options: IngestionOptions): Promise<Ingestion
         garageSpaces: master.garageSpaces,
         stories: master.stories,
         propSubType: master.propSubType,
-        searchMode: master.searchMode ?? "commercial",
+        searchMode: master.searchMode ?? "residential",
       },
       update: {
         priceAmount: master.priceAmount,
@@ -141,7 +141,7 @@ export async function runIngestion(options: IngestionOptions): Promise<Ingestion
         garageSpaces: master.garageSpaces,
         stories: master.stories,
         propSubType: master.propSubType,
-        searchMode: master.searchMode ?? "commercial",
+        searchMode: master.searchMode ?? "residential",
       },
     });
     result.listingsUpserted++;

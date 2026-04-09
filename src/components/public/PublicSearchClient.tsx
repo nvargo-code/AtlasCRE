@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef, useMemo, Suspense } from "react";
+import { useEffect, useState, useCallback, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Map } from "@/components/Map";
 import { ListingFilters, ListingWithVariants } from "@/types";
@@ -83,16 +83,7 @@ function SearchContent() {
   }
   const [selectedListing, setSelectedListing] = useState<ListingWithVariants | null>(null);
 
-  const sourceCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    for (const l of listings) {
-      if (!l.variants) continue;
-      for (const v of l.variants) {
-        counts[v.source.slug] = (counts[v.source.slug] || 0) + 1;
-      }
-    }
-    return counts;
-  }, [listings]);
+  const [sourceCounts, setSourceCounts] = useState<Record<string, number>>({});
 
   const boundsRef = useRef<ListingFilters["bounds"]>(undefined);
   const filtersRef = useRef(filters);
@@ -215,6 +206,7 @@ function SearchContent() {
       setListings(data.listings || []);
       setTotalCount(data.pagination?.total ?? 0);
       setHasMore((data.pagination?.page ?? 1) < (data.pagination?.totalPages ?? 1));
+      if (data.sourceCounts) setSourceCounts(data.sourceCounts);
     }
 
     // Zillow comparison for residential
@@ -481,7 +473,7 @@ function SearchContent() {
               className="bg-white/5 border border-white/20 text-white/70 text-[12px] tracking-wider px-4 py-2 focus:outline-none focus:border-gold"
               onChange={(e) => setFilters({ ...filters, sources: e.target.value ? [e.target.value] : undefined })}
             >
-              <option value="">All Sources ({listings.length})</option>
+              <option value="">All Sources ({totalCount})</option>
               {SOURCE_FILTER_OPTIONS.map((s) => (
                 <option key={s.slug} value={s.slug}>{s.label} ({sourceCounts[s.slug] || 0})</option>
               ))}
