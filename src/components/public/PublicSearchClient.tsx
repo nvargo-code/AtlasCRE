@@ -85,6 +85,7 @@ function SearchContent() {
   const [selectedListing, setSelectedListing] = useState<ListingWithVariants | null>(null);
 
   const [sourceCounts, setSourceCounts] = useState<Record<string, number>>({});
+  const [sourceDropOpen, setSourceDropOpen] = useState(false);
 
   const boundsRef = useRef<ListingFilters["bounds"]>(undefined);
   const filtersRef = useRef(filters);
@@ -408,17 +409,20 @@ function SearchContent() {
 
           {/* Quick filters */}
           <div className="flex flex-wrap gap-3 mt-4">
-                <select
-                  className="bg-white/5 border border-white/20 text-white/70 text-[12px] tracking-wider px-4 py-2 focus:outline-none focus:border-gold"
-                  onChange={(e) => setFilters({ ...filters, priceMax: e.target.value ? Number(e.target.value) : undefined })}
-                >
-                  <option value="">Any Price</option>
-                  <option value="300000">Under $300K</option>
-                  <option value="500000">Under $500K</option>
-                  <option value="750000">Under $750K</option>
-                  <option value="1000000">Under $1M</option>
-                  <option value="2000000">Under $2M</option>
-                </select>
+                <input
+                  type="number"
+                  placeholder="Min Price"
+                  className="bg-white/5 border border-white/20 text-white/70 text-[12px] tracking-wider px-4 py-2 w-28 focus:outline-none focus:border-gold placeholder:text-white/30"
+                  onBlur={(e) => setFilters({ ...filters, priceMin: e.target.value ? Number(e.target.value) : undefined })}
+                  onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+                />
+                <input
+                  type="number"
+                  placeholder="Max Price"
+                  className="bg-white/5 border border-white/20 text-white/70 text-[12px] tracking-wider px-4 py-2 w-28 focus:outline-none focus:border-gold placeholder:text-white/30"
+                  onBlur={(e) => setFilters({ ...filters, priceMax: e.target.value ? Number(e.target.value) : undefined })}
+                  onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+                />
                 <select
                   className="bg-white/5 border border-white/20 text-white/70 text-[12px] tracking-wider px-4 py-2 focus:outline-none focus:border-gold"
                   onChange={(e) => setFilters({ ...filters, bedsMin: e.target.value ? Number(e.target.value) : undefined })}
@@ -470,15 +474,45 @@ function SearchContent() {
                 <option value="2500">2,500+ SF</option>
                 <option value="3000">3,000+ SF</option>
               </select>
-            <select
-              className="bg-white/5 border border-white/20 text-white/70 text-[12px] tracking-wider px-4 py-2 focus:outline-none focus:border-gold"
-              onChange={(e) => setFilters({ ...filters, sources: e.target.value ? [e.target.value] : undefined })}
-            >
-              <option value="">All Sources ({totalCount})</option>
-              {SOURCE_FILTER_OPTIONS.map((s) => (
-                <option key={s.slug} value={s.slug}>{s.label} ({sourceCounts[s.slug] || 0})</option>
-              ))}
-            </select>
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setSourceDropOpen(!sourceDropOpen)}
+                className="bg-white/5 border border-white/20 text-white/70 text-[12px] tracking-wider px-4 py-2 focus:outline-none focus:border-gold flex items-center gap-2"
+              >
+                {filters.sources?.length ? `Sources (${filters.sources.length})` : `All Sources (${totalCount})`}
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+              </button>
+              {sourceDropOpen && (
+                <div className="absolute top-full left-0 mt-1 bg-navy border border-white/20 z-50 min-w-[200px] max-h-[300px] overflow-y-auto">
+                  <button
+                    type="button"
+                    onClick={() => { setFilters({ ...filters, sources: undefined }); setSourceDropOpen(false); }}
+                    className="w-full text-left px-4 py-2 text-[12px] text-white/70 hover:bg-white/10 border-b border-white/10"
+                  >
+                    All Sources ({totalCount})
+                  </button>
+                  {SOURCE_FILTER_OPTIONS.map((s) => {
+                    const checked = filters.sources?.includes(s.slug) ?? false;
+                    return (
+                      <label key={s.slug} className="flex items-center gap-2 px-4 py-2 text-[12px] text-white/70 hover:bg-white/10 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => {
+                            const current = filters.sources || [];
+                            const next = checked ? current.filter((x) => x !== s.slug) : [...current, s.slug];
+                            setFilters({ ...filters, sources: next.length ? next : undefined });
+                          }}
+                          className="accent-gold"
+                        />
+                        {s.label} ({sourceCounts[s.slug] || 0})
+                      </label>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>

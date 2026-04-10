@@ -12,6 +12,9 @@ export async function GET(req: NextRequest) {
   const params = req.nextUrl.searchParams;
   const filters = parseFiltersFromParams(params);
   const where = buildListingWhere(filters);
+  // Build a where clause without source filter for unfiltered source counts
+  const filtersNoSources = { ...filters, sources: undefined };
+  const whereNoSources = buildListingWhere(filtersNoSources);
 
   const page = Math.max(1, Number(params.get("page")) || 1);
   const limit = Math.min(200, Math.max(1, Number(params.get("limit")) || 50));
@@ -99,7 +102,7 @@ export async function GET(req: NextRequest) {
     prisma.listingVariant.groupBy({
       by: ["sourceId"],
       _count: true,
-      where: { listing: where },
+      where: { listing: whereNoSources },
     }),
   ]);
 

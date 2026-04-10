@@ -28,8 +28,7 @@ export const SOURCE_TAGS: Record<string, { label: string; bg: string; text: stri
 
 /** Deduplicated options for source filter dropdowns (merges abor → mls) */
 export const SOURCE_FILTER_OPTIONS = [
-  { slug: "mls",        label: "MLS" },
-  { slug: "mlsgrid",   label: "MLS (Grid)" },
+  { slug: "mlsgrid",    label: "MLS" },
   { slug: "realtor",    label: "Realtor" },
   { slug: "zillow",     label: "Zillow" },
   { slug: "zfsbo",      label: "ZFSBO" },
