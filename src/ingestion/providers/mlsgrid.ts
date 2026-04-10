@@ -482,6 +482,7 @@ async function fetchPage(
     headers: {
       Authorization: `Bearer ${token}`,
       Accept: "application/json",
+      "Accept-Encoding": "gzip",
     },
     signal: AbortSignal.timeout(30_000),
   });

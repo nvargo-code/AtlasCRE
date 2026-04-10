@@ -8,6 +8,7 @@ export const SOURCE_TAGS: Record<string, { label: string; bg: string; text: stri
 
   // MLS feed (ABOR / any MLS)
   mls:             { label: "MLS",           bg: "bg-sky-50",     text: "text-sky-700" },
+  mlsgrid:         { label: "MLS",           bg: "bg-sky-50",     text: "text-sky-700" },
   abor:            { label: "MLS",           bg: "bg-sky-50",     text: "text-sky-700" },
 
   // Zillow sources
@@ -28,6 +29,7 @@ export const SOURCE_TAGS: Record<string, { label: string; bg: string; text: stri
 /** Deduplicated options for source filter dropdowns (merges abor → mls) */
 export const SOURCE_FILTER_OPTIONS = [
   { slug: "mls",        label: "MLS" },
+  { slug: "mlsgrid",   label: "MLS (Grid)" },
   { slug: "realtor",    label: "Realtor" },
   { slug: "zillow",     label: "Zillow" },
   { slug: "zfsbo",      label: "ZFSBO" },
