@@ -267,6 +267,13 @@ async function scrapeListingsPage(page: Page): Promise<NormalizedListing[]> {
   for (const p of parsed) {
     const geo = await geocodeAddress(p.address, p.city, "TX");
     if (!geo) continue;
+    // Detect lease vs sale from price text and amount
+    const fullText = (p.c.fullText + " " + p.c.priceText + " " + p.c.typeText).toLowerCase();
+    const hasLeaseKeyword = /lease|rent|\/mo|per\s*month|monthly/i.test(fullText);
+    const isLikelyLease = hasLeaseKeyword || (p.priceAmount != null && p.priceAmount > 0 && p.priceAmount < 50000);
+    const listingType = isLikelyLease ? "lease" : "sale";
+    const priceUnit = isLikelyLease ? "per_month" : "total";
+
     listings.push({
       externalId: p.id.replace(/\s+/g, "-").toLowerCase(),
       sourceSlug: "aln",
@@ -277,10 +284,10 @@ async function scrapeListingsPage(page: Page): Promise<NormalizedListing[]> {
       lng: geo.lng,
       market: "austin",
       propertyType: p.c.typeText || "Residential",
-      listingType: "sale",
+      listingType,
       buildingSf: p.buildingSf,
       priceAmount: p.priceAmount,
-      priceUnit: "total",
+      priceUnit,
       brokerName: p.c.brokerText || undefined,
       imageUrl: p.c.img || undefined,
       sourceUrl: p.sourceUrl,

@@ -15,7 +15,7 @@ export function buildListingWhere(filters: ListingFilters): Prisma.ListingWhereI
   }
 
   if (filters.listingType?.length) {
-    where.listingType = { in: filters.listingType };
+    where.listingType = { in: filters.listingType, mode: "insensitive" };
   }
 
   if (filters.priceMin !== undefined || filters.priceMax !== undefined) {

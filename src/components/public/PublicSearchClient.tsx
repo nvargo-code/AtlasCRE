@@ -45,6 +45,7 @@ function formatPrice(amount: number | null, unit: string | null): string {
   if (unit === "per_sf_yr") return `${formatted}/SF/YR`;
   if (unit === "per_sf_mo") return `${formatted}/SF/MO`;
   if (unit === "per_sf") return `${formatted}/SF`;
+  if (unit === "per_month") return `${formatted}/MO`;
   return formatted;
 }
 
@@ -441,11 +442,11 @@ function SearchContent() {
                 </select>
             <select
               className="bg-white/5 border border-white/20 text-white/70 text-[12px] tracking-wider px-4 py-2 focus:outline-none focus:border-gold"
-              onChange={(e) => setFilters({ ...filters, market: e.target.value as "austin" | "dfw" | undefined || undefined })}
+              onChange={(e) => setFilters({ ...filters, listingType: e.target.value ? [e.target.value] as ListingFilters["listingType"] : undefined })}
             >
-              <option value="">All Markets</option>
-              <option value="austin">Austin</option>
-              <option value="dfw">DFW</option>
+              <option value="">Sale / Lease</option>
+              <option value="sale">For Sale</option>
+              <option value="lease">For Lease</option>
             </select>
             <select
               className="bg-white/5 border border-white/20 text-white/70 text-[12px] tracking-wider px-4 py-2 focus:outline-none focus:border-gold"

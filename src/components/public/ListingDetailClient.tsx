@@ -70,6 +70,7 @@ function formatPrice(amount: number | null, unit: string | null): string {
   if (unit === "per_sf_yr") return `${formatted}/SF/YR`;
   if (unit === "per_sf_mo") return `${formatted}/SF/MO`;
   if (unit === "per_sf") return `${formatted}/SF`;
+  if (unit === "per_month") return `${formatted}/MO`;
   return formatted;
 }
 
