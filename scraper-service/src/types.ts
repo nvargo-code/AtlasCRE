@@ -23,4 +23,11 @@ export interface NormalizedListing {
   imageUrl?: string;
   sourceUrl?: string;
   rawData: Record<string, unknown>;
+  // Residential fields
+  beds?: number;
+  baths?: number;
+  garageSpaces?: number;
+  stories?: number;
+  propSubType?: string;
+  searchMode?: "commercial" | "residential";
 }
