@@ -8,8 +8,10 @@ import { crexiProvider } from "./providers/crexi";
 import { davisonvogelProvider } from "./providers/davisonvogel";
 import { youngerpartnersProvider } from "./providers/youngerpartners";
 import { alnProvider } from "./providers/aln";
+import { mlsGridProvider } from "./providers/mlsgrid";
 
 const ALL_PROVIDERS: ListingProvider[] = [
+  mlsGridProvider,
   crexiProvider,
   realtorProvider,
   alnProvider,

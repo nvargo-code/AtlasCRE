@@ -39,6 +39,13 @@ export async function GET(req: NextRequest) {
         baths: true,
         propSubType: true,
         searchMode: true,
+        brokerName: true,
+        brokerCompany: true,
+        variants: {
+          select: { source: { select: { slug: true } } },
+          take: 1,
+          orderBy: { fetchedAt: "desc" },
+        },
       },
       take: 2000,
     });
@@ -65,6 +72,9 @@ export async function GET(req: NextRequest) {
           baths: l.baths,
           propSubType: l.propSubType,
           searchMode: l.searchMode,
+          brokerName: l.brokerName,
+          brokerCompany: l.brokerCompany,
+          sourceSlug: l.variants[0]?.source?.slug ?? null,
         },
       })),
     };

@@ -113,7 +113,28 @@ export function ListingDetail({ listing, onClose, onToggleFavorite }: ListingDet
           </div>
         )}
 
-        {/* Variants */}
+        {/* IDX Compliance: Listing Broker Attribution */}
+        {(listing.brokerName || listing.brokerCompany) && (
+          <div className="p-3 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700">
+            <h3 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
+              Listing Broker
+            </h3>
+            {listing.brokerName && (
+              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{listing.brokerName}</p>
+            )}
+            {listing.brokerCompany && (
+              <p className="text-sm text-gray-600 dark:text-gray-400">{listing.brokerCompany}</p>
+            )}
+            {listing.variants[0]?.brokerPhone && (
+              <p className="text-sm text-teal-600">{listing.variants[0].brokerPhone}</p>
+            )}
+            {listing.variants[0]?.brokerEmail && (
+              <p className="text-sm text-teal-600">{listing.variants[0].brokerEmail}</p>
+            )}
+          </div>
+        )}
+
+        {/* Variants / Sources */}
         {listing.variants.length > 0 && (
           <div>
             <h3 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
@@ -155,6 +176,15 @@ export function ListingDetail({ listing, onClose, onToggleFavorite }: ListingDet
             </div>
           </div>
         )}
+
+        {/* IDX Compliance: Data Disclaimer */}
+        <div className="pt-3 border-t border-gray-200 dark:border-gray-700">
+          <p className="text-[10px] text-gray-400 dark:text-gray-500 leading-relaxed">
+            Listing data provided by Unlock MLS via MLS Grid. Information is deemed
+            reliable but is not guaranteed accurate by the MLS or Vivid Acres LLC.
+            Buyer to verify all information. Data last updated every 2 hours.
+          </p>
+        </div>
       </div>
     </div>
   );

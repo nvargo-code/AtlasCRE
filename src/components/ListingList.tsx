@@ -14,6 +14,9 @@ interface ListingItem {
   baths?: number | null;
   propSubType?: string | null;
   searchMode?: string;
+  brokerName?: string | null;
+  brokerCompany?: string | null;
+  sourceSlug?: string | null;
 }
 
 interface ListingListProps {
@@ -83,6 +86,25 @@ export function ListingList({ listings, onSelect, selectedId }: ListingListProps
                   {l.buildingSf.toLocaleString()} SF
                 </span>
               )
+            )}
+          </div>
+          {/* IDX Compliance: Listing broker attribution */}
+          <div className="flex items-center gap-2 mt-1.5">
+            {l.brokerCompany && (
+              <span className="text-[10px] text-gray-400 dark:text-gray-500 truncate max-w-[200px]">
+                Listed by {l.brokerCompany}
+              </span>
+            )}
+            {l.sourceSlug && (
+              <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
+                l.sourceSlug === "mlsgrid"
+                  ? "bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400"
+                  : l.sourceSlug === "aln"
+                  ? "bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400"
+                  : "bg-gray-50 text-gray-500 dark:bg-gray-800 dark:text-gray-400"
+              }`}>
+                {l.sourceSlug === "mlsgrid" ? "MLS" : l.sourceSlug === "aln" ? "ALN" : l.sourceSlug === "realtor" ? "Realtor" : l.sourceSlug?.toUpperCase()}
+              </span>
             )}
           </div>
         </button>
