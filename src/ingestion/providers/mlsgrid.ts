@@ -501,7 +501,7 @@ async function fetchPage(
  * Build the initial import URL for the MLS Grid API.
  * Fetches all active listings with media.
  */
-function buildInitialUrl(options?: { lastModified?: string; postalCode?: string }): string {
+function buildInitialUrl(options?: { lastModified?: string }): string {
   // Filter by originating system (required)
   let filter = `OriginatingSystemName eq '${ORIGINATING_SYSTEM}'`;
 
@@ -513,10 +513,6 @@ function buildInitialUrl(options?: { lastModified?: string; postalCode?: string 
 
   // Only active listings
   filter += " and StandardStatus eq 'Active'";
-
-  if (options?.postalCode) {
-    filter += ` and PostalCode eq '${options.postalCode}'`;
-  }
 
   const url = new URL(`${API_BASE}/Property`);
   url.searchParams.set("$filter", filter);
@@ -542,7 +538,8 @@ export const mlsGridProvider = {
     const token = getApiToken();
     const listings: NormalizedListing[] = [];
 
-    let url: string | undefined = buildInitialUrl({ postalCode: options?.postalCode });
+    const postalCode = options?.postalCode;
+    let url: string | undefined = buildInitialUrl();
     let page = 0;
 
     while (url && page < MAX_PAGES) {
@@ -562,14 +559,19 @@ export const mlsGridProvider = {
         );
 
         for (const property of data.value) {
+          // Filter by postal code if specified (API doesn't support this filter)
+          if (postalCode && property.PostalCode !== postalCode) continue;
+
           const normalized = normalizeProperty(property);
           if (normalized) {
-            // Filter by requested market
             if (normalized.market === market || market === "all") {
               listings.push(normalized);
             }
           }
         }
+
+        // If filtering by zip and we have enough, stop early
+        if (postalCode && listings.length > 0 && !data["@odata.nextLink"]) break;
 
         // Follow pagination link
         url = data["@odata.nextLink"];
