@@ -3,6 +3,7 @@ import { ListingFilters } from "@/types";
 
 export function buildListingWhere(filters: ListingFilters): Prisma.ListingWhereInput {
   const where: Prisma.ListingWhereInput = {};
+  const andConditions: Prisma.ListingWhereInput[] = [];
 
   // Residential-only platform — no searchMode filter needed
 
@@ -25,15 +26,17 @@ export function buildListingWhere(filters: ListingFilters): Prisma.ListingWhereI
   }
 
   if (filters.sfMin !== undefined || filters.sfMax !== undefined) {
-    where.buildingSf = {};
-    if (filters.sfMin !== undefined) where.buildingSf.gte = filters.sfMin;
-    if (filters.sfMax !== undefined) where.buildingSf.lte = filters.sfMax;
+    const sfFilter: Prisma.IntNullableFilter = {};
+    if (filters.sfMin !== undefined) sfFilter.gte = filters.sfMin;
+    if (filters.sfMax !== undefined) sfFilter.lte = filters.sfMax;
+    andConditions.push({ OR: [{ buildingSf: sfFilter }, { buildingSf: null }] });
   }
 
   if (filters.yearBuiltMin !== undefined || filters.yearBuiltMax !== undefined) {
-    where.yearBuilt = {};
-    if (filters.yearBuiltMin !== undefined) where.yearBuilt.gte = filters.yearBuiltMin;
-    if (filters.yearBuiltMax !== undefined) where.yearBuilt.lte = filters.yearBuiltMax;
+    const ybFilter: Prisma.IntNullableFilter = {};
+    if (filters.yearBuiltMin !== undefined) ybFilter.gte = filters.yearBuiltMin;
+    if (filters.yearBuiltMax !== undefined) ybFilter.lte = filters.yearBuiltMax;
+    andConditions.push({ OR: [{ yearBuilt: ybFilter }, { yearBuilt: null }] });
   }
 
   if (filters.status) {
@@ -63,15 +66,17 @@ export function buildListingWhere(filters: ListingFilters): Prisma.ListingWhereI
   }
 
   if (filters.bedsMin !== undefined || filters.bedsMax !== undefined) {
-    where.beds = {};
-    if (filters.bedsMin !== undefined) where.beds.gte = filters.bedsMin;
-    if (filters.bedsMax !== undefined) where.beds.lte = filters.bedsMax;
+    const bedsFilter: Prisma.IntNullableFilter = {};
+    if (filters.bedsMin !== undefined) bedsFilter.gte = filters.bedsMin;
+    if (filters.bedsMax !== undefined) bedsFilter.lte = filters.bedsMax;
+    andConditions.push({ OR: [{ beds: bedsFilter }, { beds: null }] });
   }
 
   if (filters.bathsMin !== undefined || filters.bathsMax !== undefined) {
-    where.baths = {};
-    if (filters.bathsMin !== undefined) where.baths.gte = filters.bathsMin;
-    if (filters.bathsMax !== undefined) where.baths.lte = filters.bathsMax;
+    const bathsFilter: Prisma.IntNullableFilter = {};
+    if (filters.bathsMin !== undefined) bathsFilter.gte = filters.bathsMin;
+    if (filters.bathsMax !== undefined) bathsFilter.lte = filters.bathsMax;
+    andConditions.push({ OR: [{ baths: bathsFilter }, { baths: null }] });
   }
 
   if (filters.propSubType?.length) {
@@ -81,6 +86,10 @@ export function buildListingWhere(filters: ListingFilters): Prisma.ListingWhereI
   if (filters.bounds) {
     where.lat = { gte: filters.bounds.south, lte: filters.bounds.north };
     where.lng = { gte: filters.bounds.west, lte: filters.bounds.east };
+  }
+
+  if (andConditions.length) {
+    where.AND = andConditions;
   }
 
   return where;
