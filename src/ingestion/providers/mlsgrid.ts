@@ -501,18 +501,21 @@ async function fetchPage(
  * Build the initial import URL for the MLS Grid API.
  * Fetches all active listings with media.
  */
-function buildInitialUrl(lastModified?: string): string {
-  const params = new URLSearchParams();
-
+function buildInitialUrl(options?: { lastModified?: string; postalCode?: string }): string {
   // Filter by originating system (required)
   let filter = `OriginatingSystemName eq '${ORIGINATING_SYSTEM}'`;
 
-  if (lastModified) {
-    // Replication mode: get changes since last run
-    filter += ` and ModificationTimestamp gt ${lastModified}`;
+  if (options?.lastModified) {
+    filter += ` and ModificationTimestamp gt ${options.lastModified}`;
   } else {
-    // Initial import: only get viewable records
     filter += " and MlgCanView eq true";
+  }
+
+  // Only active listings
+  filter += " and StandardStatus eq 'Active'";
+
+  if (options?.postalCode) {
+    filter += ` and PostalCode eq '${options.postalCode}'`;
   }
 
   const url = new URL(`${API_BASE}/Property`);
@@ -527,29 +530,19 @@ function buildInitialUrl(lastModified?: string): string {
 // Provider
 // ---------------------------------------------------------------------------
 
-export interface ListingProvider {
-  slug: string;
-  name: string;
-  fetchListings: (market: string) => Promise<NormalizedListing[]>;
-}
-
-export const mlsGridProvider: ListingProvider = {
+export const mlsGridProvider = {
   slug: "mlsgrid",
   name: "MLS Grid (Unlock MLS / ACTRIS)",
 
-  async fetchListings(market: string): Promise<NormalizedListing[]> {
+  async fetchListings(market: string, options?: { postalCode?: string }): Promise<NormalizedListing[]> {
     console.log(
-      `[MLSGrid] Starting fetch for market: ${market}`
+      `[MLSGrid] Starting fetch for market: ${market}${options?.postalCode ? ` zip: ${options.postalCode}` : ""}`
     );
 
     const token = getApiToken();
     const listings: NormalizedListing[] = [];
 
-    // TODO: Track lastModified per source for incremental replication.
-    // For now, fetch all active listings on each run.
-    // In production, store the greatest ModificationTimestamp from each run
-    // and use it for subsequent replication queries.
-    let url: string | undefined = buildInitialUrl();
+    let url: string | undefined = buildInitialUrl({ postalCode: options?.postalCode });
     let page = 0;
 
     while (url && page < MAX_PAGES) {

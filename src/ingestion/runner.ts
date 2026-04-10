@@ -25,6 +25,7 @@ const MARKETS = ["austin", "dfw"] as const;
 interface IngestionOptions {
   provider?: string;
   market?: string;
+  postalCode?: string;
 }
 
 interface IngestionResult {
@@ -70,7 +71,8 @@ export async function runIngestion(options: IngestionOptions): Promise<Ingestion
 
     for (const market of markets) {
       try {
-        const listings = await provider.fetchListings(market);
+        const fetchOpts = options.postalCode ? { postalCode: options.postalCode } : undefined;
+        const listings = await provider.fetchListings(market, fetchOpts);
         allListings.push(...listings);
         result.listingsFetched += listings.length;
 

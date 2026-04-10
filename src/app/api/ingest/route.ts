@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-export const maxDuration = 60;
+export const maxDuration = 300;
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { runIngestion } from "@/ingestion/runner";
@@ -14,8 +14,9 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
   const provider = body.provider as string | undefined;
   const market = body.market as string | undefined;
+  const postalCode = body.postalCode as string | undefined;
 
-  const result = await runIngestion({ provider, market });
+  const result = await runIngestion({ provider, market, postalCode });
 
   return NextResponse.json(result);
 }

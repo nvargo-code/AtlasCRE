@@ -32,8 +32,12 @@ export interface NormalizedListing {
   searchMode?: "commercial" | "residential";
 }
 
+export interface FetchOptions {
+  postalCode?: string;
+}
+
 export interface ListingProvider {
   slug: string;
   name: string;
-  fetchListings(market: "austin" | "dfw"): Promise<NormalizedListing[]>;
+  fetchListings(market: "austin" | "dfw", options?: FetchOptions): Promise<NormalizedListing[]>;
 }

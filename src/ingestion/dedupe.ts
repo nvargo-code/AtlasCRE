@@ -2,14 +2,14 @@ import { NormalizedListing } from "./types";
 
 /**
  * Generate a deduplication key from listing attributes.
- * Matches on normalized address + building SF + property type + broker name.
+ * Matches on normalized address + city so the same property from different
+ * sources (MLS, ALN, Realtor, etc.) merges into one master listing with
+ * multiple variants.
  */
 export function generateDedupeKey(listing: NormalizedListing): string {
   const parts = [
     normalizeAddress(listing.address),
-    listing.buildingSf?.toString() ?? "0",
-    listing.propertyType.toLowerCase().trim(),
-    (listing.brokerName ?? "unknown").toLowerCase().trim(),
+    (listing.city ?? "").toLowerCase().trim(),
   ];
   return parts.join("|");
 }
