@@ -396,6 +396,17 @@ function normalizeProperty(p: MlsGridProperty): NormalizedListing | null {
     propSubType: mapPropertySubType(p.PropertySubType),
     searchMode,
 
+    // Special features
+    constructionMaterials: p.ConstructionMaterials?.join(", ") || undefined,
+    hasPool: p.PoolPrivateYN === true || (p.PoolFeatures && p.PoolFeatures.length > 0) || undefined,
+    hasWaterfront: p.LotFeatures?.some((f) => /waterfront|lake\s*front|river\s*front|creek/i.test(f))
+      || p.View?.some((v) => /water|lake|river|ocean/i.test(v)) || undefined,
+    hasView: (p.View && p.View.length > 0) || undefined,
+    hasGuestAccommodations: p.InteriorFeatures?.some((f) => /guest|mother.in.law|in.law|adu|casita/i.test(f))
+      || (p.PublicRemarks && /guest\s*(house|suite|quarters|accommodations)|mother.in.law|casita|ADU/i.test(p.PublicRemarks)) || undefined,
+    hasBoatSlip: p.LotFeatures?.some((f) => /boat\s*slip|boat\s*dock|marina/i.test(f))
+      || (p.PublicRemarks && /boat\s*(slip|dock)|marina/i.test(p.PublicRemarks)) || undefined,
+
     // Store full raw data for future use
     rawData: {
       listingKey: p.ListingKey,

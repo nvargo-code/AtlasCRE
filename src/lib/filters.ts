@@ -83,6 +83,27 @@ export function buildListingWhere(filters: ListingFilters): Prisma.ListingWhereI
     where.propSubType = { in: filters.propSubType };
   }
 
+  if (filters.garageMin !== undefined) {
+    andConditions.push({ OR: [{ garageSpaces: { gte: filters.garageMin } }, { garageSpaces: null }] });
+  }
+
+  if (filters.lotAcresMin !== undefined || filters.lotAcresMax !== undefined) {
+    const lotFilter: Prisma.FloatNullableFilter = {};
+    if (filters.lotAcresMin !== undefined) lotFilter.gte = filters.lotAcresMin;
+    if (filters.lotAcresMax !== undefined) lotFilter.lte = filters.lotAcresMax;
+    andConditions.push({ OR: [{ lotSizeAcres: lotFilter }, { lotSizeAcres: null }] });
+  }
+
+  if (filters.storiesMin !== undefined) {
+    andConditions.push({ OR: [{ stories: { gte: filters.storiesMin } }, { stories: null }] });
+  }
+
+  if (filters.hasPool) where.hasPool = true;
+  if (filters.hasWaterfront) where.hasWaterfront = true;
+  if (filters.hasView) where.hasView = true;
+  if (filters.hasGuestAccommodations) where.hasGuestAccommodations = true;
+  if (filters.hasBoatSlip) where.hasBoatSlip = true;
+
   if (filters.bounds) {
     where.lat = { gte: filters.bounds.south, lte: filters.bounds.north };
     where.lng = { gte: filters.bounds.west, lte: filters.bounds.east };
@@ -149,6 +170,23 @@ export function parseFiltersFromParams(params: URLSearchParams): ListingFilters 
 
   const propSubType = params.get("propSubType");
   if (propSubType) filters.propSubType = propSubType.split(",") as ListingFilters["propSubType"];
+
+  const garageMin = params.get("garageMin");
+  if (garageMin) filters.garageMin = Number(garageMin);
+
+  const lotAcresMin = params.get("lotAcresMin");
+  if (lotAcresMin) filters.lotAcresMin = Number(lotAcresMin);
+  const lotAcresMax = params.get("lotAcresMax");
+  if (lotAcresMax) filters.lotAcresMax = Number(lotAcresMax);
+
+  const storiesMin = params.get("storiesMin");
+  if (storiesMin) filters.storiesMin = Number(storiesMin);
+
+  if (params.get("hasPool") === "true") filters.hasPool = true;
+  if (params.get("hasWaterfront") === "true") filters.hasWaterfront = true;
+  if (params.get("hasView") === "true") filters.hasView = true;
+  if (params.get("hasGuestAccommodations") === "true") filters.hasGuestAccommodations = true;
+  if (params.get("hasBoatSlip") === "true") filters.hasBoatSlip = true;
 
   const sources = params.get("sources");
   if (sources) filters.sources = sources.split(",");

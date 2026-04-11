@@ -64,6 +64,33 @@ function pointInPolygon(lng: number, lat: number, polygon: [number, number][]): 
   return inside;
 }
 
+function serializeFilters(f: ListingFilters): URLSearchParams {
+  const params = new URLSearchParams();
+  if (f.searchMode) params.set("searchMode", f.searchMode);
+  if (f.market) params.set("market", f.market);
+  if (f.propertyType?.length) params.set("propertyType", f.propertyType.join(","));
+  if (f.listingType?.length) params.set("listingType", f.listingType.join(","));
+  if (f.priceMin) params.set("priceMin", f.priceMin.toString());
+  if (f.priceMax) params.set("priceMax", f.priceMax.toString());
+  if (f.query) params.set("q", f.query);
+  if (f.bedsMin) params.set("bedsMin", f.bedsMin.toString());
+  if (f.bathsMin) params.set("bathsMin", f.bathsMin.toString());
+  if (f.propSubType?.length) params.set("propSubType", f.propSubType.join(","));
+  if (f.sources?.length) params.set("sources", f.sources.join(","));
+  if (f.sfMin) params.set("sfMin", f.sfMin.toString());
+  if (f.yearBuiltMin) params.set("yearBuiltMin", f.yearBuiltMin.toString());
+  if (f.garageMin) params.set("garageMin", f.garageMin.toString());
+  if (f.lotAcresMin) params.set("lotAcresMin", f.lotAcresMin.toString());
+  if (f.lotAcresMax) params.set("lotAcresMax", f.lotAcresMax.toString());
+  if (f.storiesMin) params.set("storiesMin", f.storiesMin.toString());
+  if (f.hasPool) params.set("hasPool", "true");
+  if (f.hasWaterfront) params.set("hasWaterfront", "true");
+  if (f.hasView) params.set("hasView", "true");
+  if (f.hasGuestAccommodations) params.set("hasGuestAccommodations", "true");
+  if (f.hasBoatSlip) params.set("hasBoatSlip", "true");
+  return params;
+}
+
 function SearchContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -187,18 +214,7 @@ function SearchContent() {
 
   const doFetch = useCallback(async () => {
     const f = filtersRef.current;
-    const params = new URLSearchParams();
-    if (f.searchMode) params.set("searchMode", f.searchMode);
-    if (f.market) params.set("market", f.market);
-    if (f.propertyType?.length) params.set("propertyType", f.propertyType.join(","));
-    if (f.listingType?.length) params.set("listingType", f.listingType.join(","));
-    if (f.priceMin) params.set("priceMin", f.priceMin.toString());
-    if (f.priceMax) params.set("priceMax", f.priceMax.toString());
-    if (f.query) params.set("q", f.query);
-    if (f.bedsMin) params.set("bedsMin", f.bedsMin.toString());
-    if (f.bathsMin) params.set("bathsMin", f.bathsMin.toString());
-    if (f.propSubType?.length) params.set("propSubType", f.propSubType.join(","));
-    if (f.sources?.length) params.set("sources", f.sources.join(","));
+    const params = serializeFilters(f);
 
     const bounds = boundsRef.current;
     if (bounds) {
@@ -274,20 +290,7 @@ function SearchContent() {
 
   // Sync filters to URL for shareable searches
   useEffect(() => {
-    const params = new URLSearchParams();
-    if (filters.searchMode) params.set("searchMode", filters.searchMode);
-    if (filters.query) params.set("q", filters.query);
-    if (filters.market) params.set("market", filters.market);
-    if (filters.priceMin) params.set("priceMin", filters.priceMin.toString());
-    if (filters.priceMax) params.set("priceMax", filters.priceMax.toString());
-    if (filters.bedsMin) params.set("bedsMin", filters.bedsMin.toString());
-    if (filters.bathsMin) params.set("bathsMin", filters.bathsMin.toString());
-    if (filters.propertyType?.length) params.set("propertyType", filters.propertyType.join(","));
-    if (filters.listingType?.length) params.set("listingType", filters.listingType.join(","));
-    if (filters.sfMin) params.set("sfMin", filters.sfMin.toString());
-    if (filters.yearBuiltMin) params.set("yearBuiltMin", filters.yearBuiltMin.toString());
-    if (filters.propSubType?.length) params.set("propSubType", filters.propSubType.join(","));
-    if (filters.sources?.length) params.set("sources", filters.sources.join(","));
+    const params = serializeFilters(filters);
     const url = params.toString() ? `/search?${params.toString()}` : "/search";
     router.replace(url, { scroll: false });
   }, [filters, router]);
@@ -296,20 +299,7 @@ function SearchContent() {
     if (loadingMore || !hasMore) return;
     setLoadingMore(true);
     const f = filtersRef.current;
-    const params = new URLSearchParams();
-    if (f.searchMode) params.set("searchMode", f.searchMode);
-    if (f.market) params.set("market", f.market);
-    if (f.propertyType?.length) params.set("propertyType", f.propertyType.join(","));
-    if (f.listingType?.length) params.set("listingType", f.listingType.join(","));
-    if (f.priceMin) params.set("priceMin", f.priceMin.toString());
-    if (f.priceMax) params.set("priceMax", f.priceMax.toString());
-    if (f.query) params.set("q", f.query);
-    if (f.bedsMin) params.set("bedsMin", f.bedsMin.toString());
-    if (f.bathsMin) params.set("bathsMin", f.bathsMin.toString());
-    if (f.propSubType?.length) params.set("propSubType", f.propSubType.join(","));
-    if (f.sfMin) params.set("sfMin", f.sfMin.toString());
-    if (f.yearBuiltMin) params.set("yearBuiltMin", f.yearBuiltMin.toString());
-    if (f.sources?.length) params.set("sources", f.sources.join(","));
+    const params = serializeFilters(f);
     const bounds = boundsRef.current;
     if (bounds) {
       params.set("north", bounds.north.toString());
@@ -505,6 +495,47 @@ function SearchContent() {
                 <option value="2500">2,500+ SF</option>
                 <option value="3000">3,000+ SF</option>
               </select>
+              <select
+                className="bg-white/5 border border-white/20 text-white/70 text-[12px] tracking-wider px-4 py-2 focus:outline-none focus:border-gold"
+                onChange={(e) => setFilters({ ...filters, garageMin: e.target.value ? Number(e.target.value) : undefined })}
+              >
+                <option value="">Garage</option>
+                <option value="1">1+</option>
+                <option value="2">2+</option>
+                <option value="3">3+</option>
+              </select>
+              <select
+                className="bg-white/5 border border-white/20 text-white/70 text-[12px] tracking-wider px-4 py-2 focus:outline-none focus:border-gold"
+                onChange={(e) => setFilters({ ...filters, lotAcresMin: e.target.value ? Number(e.target.value) : undefined })}
+              >
+                <option value="">Acres</option>
+                <option value="0.25">0.25+</option>
+                <option value="0.5">0.5+</option>
+                <option value="1">1+</option>
+                <option value="5">5+</option>
+                <option value="10">10+</option>
+              </select>
+              {/* Special features toggles */}
+              {[
+                { key: "hasPool", label: "Pool" },
+                { key: "hasWaterfront", label: "Waterfront" },
+                { key: "hasView", label: "View" },
+                { key: "hasGuestAccommodations", label: "Guest" },
+                { key: "hasBoatSlip", label: "Boat Slip" },
+              ].map((feat) => (
+                <button
+                  key={feat.key}
+                  type="button"
+                  onClick={() => setFilters({ ...filters, [feat.key]: (filters as Record<string, unknown>)[feat.key] ? undefined : true })}
+                  className={`text-[12px] tracking-wider px-4 py-2 border transition-colors ${
+                    (filters as Record<string, unknown>)[feat.key]
+                      ? "bg-gold/20 border-gold text-gold"
+                      : "bg-white/5 border-white/20 text-white/70 hover:border-gold/40"
+                  }`}
+                >
+                  {feat.label}
+                </button>
+              ))}
             <div className="relative">
               <button
                 type="button"

@@ -30,4 +30,10 @@ export interface NormalizedListing {
   stories?: number;
   propSubType?: string;
   searchMode?: "commercial" | "residential";
+  constructionMaterials?: string;
+  hasPool?: boolean;
+  hasWaterfront?: boolean;
+  hasView?: boolean;
+  hasGuestAccommodations?: boolean;
+  hasBoatSlip?: boolean;
 }

@@ -52,6 +52,16 @@ export interface ListingFilters {
   bathsMin?: number;
   bathsMax?: number;
   propSubType?: ResidentialPropertySubType[];
+  garageMin?: number;
+  lotAcresMin?: number;
+  lotAcresMax?: number;
+  storiesMin?: number;
+  // Special features
+  hasPool?: boolean;
+  hasWaterfront?: boolean;
+  hasView?: boolean;
+  hasGuestAccommodations?: boolean;
+  hasBoatSlip?: boolean;
 }
 
 export interface ListingWithVariants {

@@ -289,6 +289,12 @@ interface DetailData {
   brokerPhone?: string;
   brokerEmail?: string;
   photos?: string[];
+  constructionMaterials?: string;
+  hasPool?: boolean;
+  hasWaterfront?: boolean;
+  hasView?: boolean;
+  hasGuestAccommodations?: boolean;
+  hasBoatSlip?: boolean;
 }
 
 async function scrapeDetailPage(page: Page, url: string): Promise<DetailData> {
@@ -360,6 +366,18 @@ async function scrapeDetailPage(page: Page, url: string): Promise<DetailData> {
     // Parse garage
     const garageMatch = text.match(/(\d+)\s*(?:car\s*)?garage/i);
     if (garageMatch) detail.garageSpaces = parseInt(garageMatch[1]);
+
+    // Construction materials
+    const constMatch = text.match(/(?:construction|built\s*with|exterior)[:\s]*(brick|stone|stucco|frame|wood|metal|concrete|siding|hardi|vinyl|cedar|log|steel)/i);
+    if (constMatch) detail.constructionMaterials = constMatch[1];
+
+    // Special features detection
+    if (/\bpool\b/i.test(text) && !/no\s*pool/i.test(text)) detail.hasPool = true;
+    if (/waterfront|lake\s*front|river\s*front|creek\s*front|water\s*access/i.test(text)) detail.hasWaterfront = true;
+    if (/\bview\b.*(?:hill|lake|city|mountain|valley|scenic|panoramic|water)/i.test(text)
+      || /(?:hill|lake|city|mountain|scenic|panoramic)\s*view/i.test(text)) detail.hasView = true;
+    if (/guest\s*(?:house|suite|quarters|accommodations|casita)|mother.in.law|in.law\s*suite|\bADU\b|casita/i.test(text)) detail.hasGuestAccommodations = true;
+    if (/boat\s*(?:slip|dock|lift|house)|marina\s*access/i.test(text)) detail.hasBoatSlip = true;
 
     // Description
     if (extractFromPage.desc && extractFromPage.desc.length > 20) {
@@ -549,6 +567,12 @@ export async function scrapeALN(browser: Browser): Promise<NormalizedListing[]> 
         garageSpaces: detail.garageSpaces,
         stories: detail.stories,
         propSubType: detail.propertyType,
+        constructionMaterials: detail.constructionMaterials,
+        hasPool: detail.hasPool,
+        hasWaterfront: detail.hasWaterfront,
+        hasView: detail.hasView,
+        hasGuestAccommodations: detail.hasGuestAccommodations,
+        hasBoatSlip: detail.hasBoatSlip,
         rawData: {
           addressText: p.c.addressText,
           priceText: p.c.priceText,

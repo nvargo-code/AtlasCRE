@@ -108,6 +108,13 @@ model Listing {
   garageSpaces  Int?
   stories       Int?
   propSubType   String?
+  constructionMaterials String?
+  // Special features (boolean flags)
+  hasPool              Boolean?
+  hasWaterfront        Boolean?
+  hasView              Boolean?
+  hasGuestAccommodations Boolean?
+  hasBoatSlip          Boolean?
   searchMode    String            @default("commercial")
   createdAt     DateTime          @default(now())
   updatedAt     DateTime          @updatedAt
