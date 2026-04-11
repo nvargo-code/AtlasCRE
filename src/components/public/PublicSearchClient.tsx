@@ -32,6 +32,8 @@ type SimpleListing = {
   imageUrl?: string | null;
   createdAt?: string;
   status?: string;
+  lat?: number;
+  lng?: number;
   variants?: { source: { slug: string } }[];
 };
 
@@ -47,6 +49,19 @@ function formatPrice(amount: number | null, unit: string | null): string {
   if (unit === "per_sf") return `${formatted}/SF`;
   if (unit === "per_month") return `${formatted}/MO`;
   return formatted;
+}
+
+/** Ray-casting point-in-polygon test */
+function pointInPolygon(lng: number, lat: number, polygon: [number, number][]): boolean {
+  let inside = false;
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    const [xi, yi] = polygon[i];
+    const [xj, yj] = polygon[j];
+    if ((yi > lat) !== (yj > lat) && lng < ((xj - xi) * (lat - yi)) / (yj - yi) + xi) {
+      inside = !inside;
+    }
+  }
+  return inside;
 }
 
 function SearchContent() {
@@ -86,6 +101,7 @@ function SearchContent() {
 
   const [sourceCounts, setSourceCounts] = useState<Record<string, number>>({});
   const [sourceDropOpen, setSourceDropOpen] = useState(false);
+  const drawnPolygonRef = useRef<[number, number][] | null>(null);
 
   const boundsRef = useRef<ListingFilters["bounds"]>(undefined);
   const filtersRef = useRef(filters);
@@ -202,12 +218,27 @@ function SearchContent() {
       fetch(`/api/listings?${listParams}`),
     ]);
 
-    if (geoRes.ok) setGeojson(await geoRes.json());
+    if (geoRes.ok) {
+      const geo = await geoRes.json();
+      if (drawnPolygonRef.current && geo.features) {
+        geo.features = geo.features.filter((f: GeoJSON.Feature) => {
+          const [lng, lat] = (f.geometry as GeoJSON.Point).coordinates;
+          return pointInPolygon(lng, lat, drawnPolygonRef.current!);
+        });
+      }
+      setGeojson(geo);
+    }
     if (listRes.ok) {
       const data = await listRes.json();
-      setListings(data.listings || []);
-      setTotalCount(data.pagination?.total ?? 0);
-      setHasMore((data.pagination?.page ?? 1) < (data.pagination?.totalPages ?? 1));
+      let items = data.listings || [];
+      if (drawnPolygonRef.current) {
+        items = items.filter((l: SimpleListing) => {
+          return l.lat && l.lng && pointInPolygon(l.lng, l.lat, drawnPolygonRef.current!);
+        });
+      }
+      setListings(items);
+      setTotalCount(drawnPolygonRef.current ? items.length : (data.pagination?.total ?? 0));
+      setHasMore(drawnPolygonRef.current ? false : (data.pagination?.page ?? 1) < (data.pagination?.totalPages ?? 1));
       if (data.sourceCounts) setSourceCounts(data.sourceCounts);
     }
 
@@ -587,7 +618,9 @@ function SearchContent() {
           <DrawControl
             map={mapInstance}
             onPolygonComplete={(polygon) => {
-              // Calculate bounding box from polygon
+              // Store polygon for point-in-polygon filtering
+              drawnPolygonRef.current = polygon;
+              // Calculate bounding box for the API query (pre-filter)
               const lngs = polygon.map((p) => p[0]);
               const lats = polygon.map((p) => p[1]);
               boundsRef.current = {
@@ -599,7 +632,7 @@ function SearchContent() {
               doFetch();
             }}
             onClear={() => {
-              // Reset to map's current bounds
+              drawnPolygonRef.current = null;
               if (mapInstance) {
                 const b = mapInstance.getBounds();
                 boundsRef.current = {
