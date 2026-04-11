@@ -78,6 +78,7 @@ function serializeFilters(f: ListingFilters): URLSearchParams {
   if (f.propSubType?.length) params.set("propSubType", f.propSubType.join(","));
   if (f.sources?.length) params.set("sources", f.sources.join(","));
   if (f.sfMin) params.set("sfMin", f.sfMin.toString());
+  if (f.sfMax) params.set("sfMax", f.sfMax.toString());
   if (f.yearBuiltMin) params.set("yearBuiltMin", f.yearBuiltMin.toString());
   if (f.garageMin) params.set("garageMin", f.garageMin.toString());
   if (f.lotAcresMin) params.set("lotAcresMin", f.lotAcresMin.toString());
@@ -128,13 +129,15 @@ function SearchContent() {
 
   const [sourceCounts, setSourceCounts] = useState<Record<string, number>>({});
   const [sourceDropOpen, setSourceDropOpen] = useState(false);
+  const [sqftDropOpen, setSqftDropOpen] = useState(false);
+  const [acresDropOpen, setAcresDropOpen] = useState(false);
   const drawnPolygonRef = useRef<[number, number][] | null>(null);
 
   const boundsRef = useRef<ListingFilters["bounds"]>(undefined);
   const filtersRef = useRef(filters);
   filtersRef.current = filters;
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
-  const initialLoadDone = useRef(false);
+  const mapReady = useRef(false);
 
   // Sync mode/query into filters
   useEffect(() => {
@@ -157,10 +160,23 @@ function SearchContent() {
     if (lt) f.listingType = lt.split(",") as ListingFilters["listingType"];
     const sfMin = searchParams.get("sfMin");
     if (sfMin) f.sfMin = Number(sfMin);
+    const sfMax = searchParams.get("sfMax");
+    if (sfMax) f.sfMax = Number(sfMax);
     const pst = searchParams.get("propSubType");
     if (pst) f.propSubType = pst.split(",") as ListingFilters["propSubType"];
     const yb = searchParams.get("yearBuiltMin");
     if (yb) f.yearBuiltMin = Number(yb);
+    const gm = searchParams.get("garageMin");
+    if (gm) f.garageMin = Number(gm);
+    const lam = searchParams.get("lotAcresMin");
+    if (lam) f.lotAcresMin = Number(lam);
+    const lax = searchParams.get("lotAcresMax");
+    if (lax) f.lotAcresMax = Number(lax);
+    if (searchParams.get("hasPool") === "true") f.hasPool = true;
+    if (searchParams.get("hasWaterfront") === "true") f.hasWaterfront = true;
+    if (searchParams.get("hasView") === "true") f.hasView = true;
+    if (searchParams.get("hasGuestAccommodations") === "true") f.hasGuestAccommodations = true;
+    if (searchParams.get("hasBoatSlip") === "true") f.hasBoatSlip = true;
     const src = searchParams.get("sources");
     if (src) f.sources = src.split(",");
     setFilters(f);
@@ -286,7 +302,7 @@ function SearchContent() {
     }
   }, []);
 
-  useEffect(() => { doFetch(); }, [filters, doFetch]);
+  useEffect(() => { if (mapReady.current) doFetch(); }, [filters, doFetch]);
 
   // Sync filters to URL for shareable searches
   useEffect(() => {
@@ -322,7 +338,12 @@ function SearchContent() {
   const handleBoundsChange = useCallback((bounds: { north: number; south: number; east: number; west: number }) => {
     boundsRef.current = bounds;
     setCurrentBounds(bounds);
-    if (!initialLoadDone.current) { initialLoadDone.current = true; return; }
+    if (!mapReady.current) {
+      // First bounds from map — trigger initial fetch with bounds
+      mapReady.current = true;
+      doFetch();
+      return;
+    }
     clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => doFetch(), 300);
   }, [doFetch]);
@@ -484,17 +505,64 @@ function SearchContent() {
               <option value="1990">1990+</option>
               <option value="1980">1980+</option>
             </select>
-              <select
-                className="bg-white/5 border border-white/20 text-white/70 text-[12px] tracking-wider px-4 py-2 focus:outline-none focus:border-gold"
-                onChange={(e) => setFilters({ ...filters, sfMin: e.target.value ? Number(e.target.value) : undefined })}
-              >
-                <option value="">Min Sqft</option>
-                <option value="1000">1,000+ SF</option>
-                <option value="1500">1,500+ SF</option>
-                <option value="2000">2,000+ SF</option>
-                <option value="2500">2,500+ SF</option>
-                <option value="3000">3,000+ SF</option>
-              </select>
+              {/* Square Footage expandable min/max */}
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => { setSqftDropOpen(!sqftDropOpen); setAcresDropOpen(false); }}
+                  className={`bg-white/5 border text-[12px] tracking-wider px-4 py-2 flex items-center gap-2 ${
+                    filters.sfMin || filters.sfMax ? "border-gold text-gold" : "border-white/20 text-white/70"
+                  }`}
+                >
+                  {filters.sfMin || filters.sfMax
+                    ? `${filters.sfMin?.toLocaleString() || "0"}–${filters.sfMax?.toLocaleString() || "Any"} SF`
+                    : "Sqft"}
+                  <svg className={`w-3 h-3 transition-transform ${sqftDropOpen ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                </button>
+                {sqftDropOpen && (
+                  <div className="absolute top-full left-0 mt-1 bg-navy border border-white/20 z-50 p-3 flex gap-2 items-center">
+                    <input type="number" placeholder="Min" defaultValue={filters.sfMin || ""} className="bg-white/5 border border-white/20 text-white text-[12px] px-3 py-1.5 w-24 focus:outline-none focus:border-gold placeholder:text-white/30"
+                      onBlur={(e) => setFilters({ ...filters, sfMin: e.target.value ? Number(e.target.value) : undefined })}
+                      onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+                    />
+                    <span className="text-white/40 text-[11px]">–</span>
+                    <input type="number" placeholder="Max" defaultValue={filters.sfMax || ""} className="bg-white/5 border border-white/20 text-white text-[12px] px-3 py-1.5 w-24 focus:outline-none focus:border-gold placeholder:text-white/30"
+                      onBlur={(e) => setFilters({ ...filters, sfMax: e.target.value ? Number(e.target.value) : undefined })}
+                      onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+                    />
+                    <button type="button" onClick={() => { setFilters({ ...filters, sfMin: undefined, sfMax: undefined }); setSqftDropOpen(false); }} className="text-white/40 hover:text-white text-[10px]">✕</button>
+                  </div>
+                )}
+              </div>
+              {/* Acres expandable min/max */}
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => { setAcresDropOpen(!acresDropOpen); setSqftDropOpen(false); }}
+                  className={`bg-white/5 border text-[12px] tracking-wider px-4 py-2 flex items-center gap-2 ${
+                    filters.lotAcresMin || filters.lotAcresMax ? "border-gold text-gold" : "border-white/20 text-white/70"
+                  }`}
+                >
+                  {filters.lotAcresMin || filters.lotAcresMax
+                    ? `${filters.lotAcresMin || "0"}–${filters.lotAcresMax || "Any"} Acres`
+                    : "Acres"}
+                  <svg className={`w-3 h-3 transition-transform ${acresDropOpen ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                </button>
+                {acresDropOpen && (
+                  <div className="absolute top-full left-0 mt-1 bg-navy border border-white/20 z-50 p-3 flex gap-2 items-center">
+                    <input type="number" step="0.01" placeholder="Min" defaultValue={filters.lotAcresMin || ""} className="bg-white/5 border border-white/20 text-white text-[12px] px-3 py-1.5 w-24 focus:outline-none focus:border-gold placeholder:text-white/30"
+                      onBlur={(e) => setFilters({ ...filters, lotAcresMin: e.target.value ? Number(e.target.value) : undefined })}
+                      onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+                    />
+                    <span className="text-white/40 text-[11px]">–</span>
+                    <input type="number" step="0.01" placeholder="Max" defaultValue={filters.lotAcresMax || ""} className="bg-white/5 border border-white/20 text-white text-[12px] px-3 py-1.5 w-24 focus:outline-none focus:border-gold placeholder:text-white/30"
+                      onBlur={(e) => setFilters({ ...filters, lotAcresMax: e.target.value ? Number(e.target.value) : undefined })}
+                      onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+                    />
+                    <button type="button" onClick={() => { setFilters({ ...filters, lotAcresMin: undefined, lotAcresMax: undefined }); setAcresDropOpen(false); }} className="text-white/40 hover:text-white text-[10px]">✕</button>
+                  </div>
+                )}
+              </div>
               <select
                 className="bg-white/5 border border-white/20 text-white/70 text-[12px] tracking-wider px-4 py-2 focus:outline-none focus:border-gold"
                 onChange={(e) => setFilters({ ...filters, garageMin: e.target.value ? Number(e.target.value) : undefined })}
@@ -503,17 +571,6 @@ function SearchContent() {
                 <option value="1">1+</option>
                 <option value="2">2+</option>
                 <option value="3">3+</option>
-              </select>
-              <select
-                className="bg-white/5 border border-white/20 text-white/70 text-[12px] tracking-wider px-4 py-2 focus:outline-none focus:border-gold"
-                onChange={(e) => setFilters({ ...filters, lotAcresMin: e.target.value ? Number(e.target.value) : undefined })}
-              >
-                <option value="">Acres</option>
-                <option value="0.25">0.25+</option>
-                <option value="0.5">0.5+</option>
-                <option value="1">1+</option>
-                <option value="5">5+</option>
-                <option value="10">10+</option>
               </select>
               {/* Special features toggles */}
               {[
