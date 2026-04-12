@@ -26,17 +26,15 @@ export function buildListingWhere(filters: ListingFilters): Prisma.ListingWhereI
   }
 
   if (filters.sfMin !== undefined || filters.sfMax !== undefined) {
-    const sfFilter: Prisma.IntNullableFilter = {};
-    if (filters.sfMin !== undefined) sfFilter.gte = filters.sfMin;
-    if (filters.sfMax !== undefined) sfFilter.lte = filters.sfMax;
-    andConditions.push({ OR: [{ buildingSf: sfFilter }, { buildingSf: null }] });
+    where.buildingSf = {};
+    if (filters.sfMin !== undefined) where.buildingSf.gte = filters.sfMin;
+    if (filters.sfMax !== undefined) where.buildingSf.lte = filters.sfMax;
   }
 
   if (filters.yearBuiltMin !== undefined || filters.yearBuiltMax !== undefined) {
-    const ybFilter: Prisma.IntNullableFilter = {};
-    if (filters.yearBuiltMin !== undefined) ybFilter.gte = filters.yearBuiltMin;
-    if (filters.yearBuiltMax !== undefined) ybFilter.lte = filters.yearBuiltMax;
-    andConditions.push({ OR: [{ yearBuilt: ybFilter }, { yearBuilt: null }] });
+    where.yearBuilt = {};
+    if (filters.yearBuiltMin !== undefined) where.yearBuilt.gte = filters.yearBuiltMin;
+    if (filters.yearBuiltMax !== undefined) where.yearBuilt.lte = filters.yearBuiltMax;
   }
 
   if (filters.status) {
@@ -66,17 +64,15 @@ export function buildListingWhere(filters: ListingFilters): Prisma.ListingWhereI
   }
 
   if (filters.bedsMin !== undefined || filters.bedsMax !== undefined) {
-    const bedsFilter: Prisma.IntNullableFilter = {};
-    if (filters.bedsMin !== undefined) bedsFilter.gte = filters.bedsMin;
-    if (filters.bedsMax !== undefined) bedsFilter.lte = filters.bedsMax;
-    andConditions.push({ OR: [{ beds: bedsFilter }, { beds: null }] });
+    where.beds = {};
+    if (filters.bedsMin !== undefined) where.beds.gte = filters.bedsMin;
+    if (filters.bedsMax !== undefined) where.beds.lte = filters.bedsMax;
   }
 
   if (filters.bathsMin !== undefined || filters.bathsMax !== undefined) {
-    const bathsFilter: Prisma.IntNullableFilter = {};
-    if (filters.bathsMin !== undefined) bathsFilter.gte = filters.bathsMin;
-    if (filters.bathsMax !== undefined) bathsFilter.lte = filters.bathsMax;
-    andConditions.push({ OR: [{ baths: bathsFilter }, { baths: null }] });
+    where.baths = {};
+    if (filters.bathsMin !== undefined) where.baths.gte = filters.bathsMin;
+    if (filters.bathsMax !== undefined) where.baths.lte = filters.bathsMax;
   }
 
   if (filters.propSubType?.length) {
@@ -84,18 +80,17 @@ export function buildListingWhere(filters: ListingFilters): Prisma.ListingWhereI
   }
 
   if (filters.garageMin !== undefined) {
-    andConditions.push({ OR: [{ garageSpaces: { gte: filters.garageMin } }, { garageSpaces: null }] });
+    where.garageSpaces = { gte: filters.garageMin };
   }
 
   if (filters.lotAcresMin !== undefined || filters.lotAcresMax !== undefined) {
-    const lotFilter: Prisma.FloatNullableFilter = {};
-    if (filters.lotAcresMin !== undefined) lotFilter.gte = filters.lotAcresMin;
-    if (filters.lotAcresMax !== undefined) lotFilter.lte = filters.lotAcresMax;
-    andConditions.push({ OR: [{ lotSizeAcres: lotFilter }, { lotSizeAcres: null }] });
+    where.lotSizeAcres = {};
+    if (filters.lotAcresMin !== undefined) where.lotSizeAcres.gte = filters.lotAcresMin;
+    if (filters.lotAcresMax !== undefined) where.lotSizeAcres.lte = filters.lotAcresMax;
   }
 
   if (filters.storiesMin !== undefined) {
-    andConditions.push({ OR: [{ stories: { gte: filters.storiesMin } }, { stories: null }] });
+    where.stories = { gte: filters.storiesMin };
   }
 
   if (filters.hasPool) where.hasPool = true;

@@ -364,7 +364,7 @@ function normalizeProperty(p: MlsGridProperty): NormalizedListing | null {
     // Property info
     propertyType: p.PropertyType || "Residential",
     listingType:
-      p.PropertyType?.includes("Lease") ? "For Lease" : "For Sale",
+      p.PropertyType?.includes("Lease") ? "lease" : "sale",
     buildingSf: p.LivingArea || p.BuildingAreaTotal || undefined,
     lotSizeAcres:
       p.LotSizeAcres ||
