@@ -166,7 +166,7 @@ function SearchContent() {
     const market = searchParams.get("market");
     if (market === "austin" || market === "dfw") f.market = market;
     const lt = searchParams.get("listingType");
-    if (lt) f.listingType = lt.split(",") as ListingFilters["listingType"];
+    f.listingType = (lt ? lt.split(",") : ["sale"]) as ListingFilters["listingType"];
     const sfMin = searchParams.get("sfMin");
     if (sfMin) f.sfMin = Number(sfMin);
     const sfMax = searchParams.get("sfMax");
@@ -497,37 +497,12 @@ function SearchContent() {
                 </select>
             <select
               className="bg-white/5 border border-white/20 text-white/70 text-[12px] tracking-wider px-4 py-2 focus:outline-none focus:border-gold"
+              value={filters.listingType?.[0] || "sale"}
               onChange={(e) => setFilters({ ...filters, listingType: e.target.value ? [e.target.value] as ListingFilters["listingType"] : undefined })}
             >
-              <option value="">Sale / Lease</option>
               <option value="sale">For Sale</option>
               <option value="lease">For Lease</option>
-            </select>
-            {/* More Filters toggle */}
-            <button
-              type="button"
-              onClick={() => setMoreFiltersOpen(!moreFiltersOpen)}
-              className={`text-[12px] tracking-wider px-4 py-2 border transition-colors flex items-center gap-1.5 ${
-                moreFiltersOpen ? "border-gold text-gold" : "bg-white/5 border-white/20 text-white/70 hover:border-gold/40"
-              }`}
-            >
-              More Filters
-              <svg className={`w-3 h-3 transition-transform ${moreFiltersOpen ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-            </button>
-          </div>
-          {/* Extended filters */}
-          {moreFiltersOpen && (
-          <div key={`more-${filterVersion}`} className="flex flex-wrap gap-3 mt-3">
-            <select
-              className="bg-white/5 border border-white/20 text-white/70 text-[12px] tracking-wider px-4 py-2 focus:outline-none focus:border-gold"
-              onChange={(e) => setFilters({ ...filters, yearBuiltMin: e.target.value ? Number(e.target.value) : undefined })}
-            >
-              <option value="">Year Built</option>
-              <option value="2020">2020+</option>
-              <option value="2010">2010+</option>
-              <option value="2000">2000+</option>
-              <option value="1990">1990+</option>
-              <option value="1980">1980+</option>
+              <option value="">All</option>
             </select>
               {/* Square Footage expandable min/max */}
               <div className="relative">
@@ -587,36 +562,7 @@ function SearchContent() {
                   </div>
                 )}
               </div>
-              <select
-                className="bg-white/5 border border-white/20 text-white/70 text-[12px] tracking-wider px-4 py-2 focus:outline-none focus:border-gold"
-                onChange={(e) => setFilters({ ...filters, garageMin: e.target.value ? Number(e.target.value) : undefined })}
-              >
-                <option value="">Garage</option>
-                <option value="1">1+</option>
-                <option value="2">2+</option>
-                <option value="3">3+</option>
-              </select>
-              {/* Special features toggles */}
-              {[
-                { key: "hasPool", label: "Pool" },
-                { key: "hasWaterfront", label: "Waterfront" },
-                { key: "hasView", label: "View" },
-                { key: "hasGuestAccommodations", label: "Guest" },
-                { key: "hasBoatSlip", label: "Boat Slip" },
-              ].map((feat) => (
-                <button
-                  key={feat.key}
-                  type="button"
-                  onClick={() => setFilters({ ...filters, [feat.key]: (filters as Record<string, unknown>)[feat.key] ? undefined : true })}
-                  className={`text-[12px] tracking-wider px-4 py-2 border transition-colors ${
-                    (filters as Record<string, unknown>)[feat.key]
-                      ? "bg-gold/20 border-gold text-gold"
-                      : "bg-white/5 border-white/20 text-white/70 hover:border-gold/40"
-                  }`}
-                >
-                  {feat.label}
-                </button>
-              ))}
+            {/* Sources multi-select */}
             <div className="relative">
               <button
                 type="button"
@@ -656,6 +602,62 @@ function SearchContent() {
                 </div>
               )}
             </div>
+            {/* More Filters toggle */}
+            <button
+              type="button"
+              onClick={() => setMoreFiltersOpen(!moreFiltersOpen)}
+              className={`text-[12px] tracking-wider px-4 py-2 border transition-colors flex items-center gap-1.5 ${
+                moreFiltersOpen ? "border-gold text-gold" : "bg-white/5 border-white/20 text-white/70 hover:border-gold/40"
+              }`}
+            >
+              More Filters
+              <svg className={`w-3 h-3 transition-transform ${moreFiltersOpen ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+            </button>
+          </div>
+          {/* Extended filters */}
+          {moreFiltersOpen && (
+          <div key={`more-${filterVersion}`} className="flex flex-wrap gap-3 mt-3">
+            <select
+              className="bg-white/5 border border-white/20 text-white/70 text-[12px] tracking-wider px-4 py-2 focus:outline-none focus:border-gold"
+              onChange={(e) => setFilters({ ...filters, yearBuiltMin: e.target.value ? Number(e.target.value) : undefined })}
+            >
+              <option value="">Year Built</option>
+              <option value="2020">2020+</option>
+              <option value="2010">2010+</option>
+              <option value="2000">2000+</option>
+              <option value="1990">1990+</option>
+              <option value="1980">1980+</option>
+            </select>
+              <select
+                className="bg-white/5 border border-white/20 text-white/70 text-[12px] tracking-wider px-4 py-2 focus:outline-none focus:border-gold"
+                onChange={(e) => setFilters({ ...filters, garageMin: e.target.value ? Number(e.target.value) : undefined })}
+              >
+                <option value="">Garage</option>
+                <option value="1">1+</option>
+                <option value="2">2+</option>
+                <option value="3">3+</option>
+              </select>
+              {/* Special features toggles */}
+              {[
+                { key: "hasPool", label: "Pool" },
+                { key: "hasWaterfront", label: "Waterfront" },
+                { key: "hasView", label: "View" },
+                { key: "hasGuestAccommodations", label: "Guest" },
+                { key: "hasBoatSlip", label: "Boat Slip" },
+              ].map((feat) => (
+                <button
+                  key={feat.key}
+                  type="button"
+                  onClick={() => setFilters({ ...filters, [feat.key]: (filters as Record<string, unknown>)[feat.key] ? undefined : true })}
+                  className={`text-[12px] tracking-wider px-4 py-2 border transition-colors ${
+                    (filters as Record<string, unknown>)[feat.key]
+                      ? "bg-gold/20 border-gold text-gold"
+                      : "bg-white/5 border-white/20 text-white/70 hover:border-gold/40"
+                  }`}
+                >
+                  {feat.label}
+                </button>
+              ))}
           </div>
           )}
         </div>
