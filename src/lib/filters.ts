@@ -5,7 +5,12 @@ export function buildListingWhere(filters: ListingFilters): Prisma.ListingWhereI
   const where: Prisma.ListingWhereInput = {};
   const andConditions: Prisma.ListingWhereInput[] = [];
 
-  // Residential-only platform — no searchMode filter needed
+  // Residential-only platform — exclude commercial-only sources (e.g., CREXI)
+  andConditions.push({
+    variants: {
+      none: { source: { slug: "crexi" } },
+    },
+  });
 
   if (filters.market) {
     where.market = filters.market;

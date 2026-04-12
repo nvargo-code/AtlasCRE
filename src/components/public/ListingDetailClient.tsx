@@ -63,10 +63,17 @@ interface ListingData {
 
 function formatPrice(amount: number | null, unit: string | null): string {
   if (!amount) return "Contact for Price";
-  const formatted =
-    amount >= 1000000
-      ? `$${(amount / 1000000).toFixed(1)}M`
-      : `$${amount.toLocaleString()}`;
+  let formatted: string;
+  if (amount >= 1000000) {
+    const millions = amount / 1000000;
+    // Use 2 decimal places when the remainder is significant (e.g., $3.95M not $4.0M)
+    const remainder = millions % 1;
+    formatted = remainder >= 0.05 && remainder <= 0.95
+      ? `$${millions.toFixed(2)}M`
+      : `$${millions.toFixed(1)}M`;
+  } else {
+    formatted = `$${amount.toLocaleString()}`;
+  }
   if (unit === "per_sf_yr") return `${formatted}/SF/YR`;
   if (unit === "per_sf_mo") return `${formatted}/SF/MO`;
   if (unit === "per_sf") return `${formatted}/SF`;
@@ -169,14 +176,17 @@ export function ListingDetailClient({ listing, similarListings = [] }: { listing
                   <span className="text-[12px] font-semibold tracking-[0.12em] uppercase bg-gold/10 text-gold px-4 py-1.5">
                     For {listing.listingType}
                   </span>
-                  {listing.variants.map((v) => {
-                    const tag = getSourceTag(v.sourceSlug);
-                    return (
-                      <span key={v.sourceSlug} className={`text-[10px] font-semibold tracking-wider uppercase ${tag.bg} ${tag.text} px-2.5 py-1`}>
-                        {tag.label}
-                      </span>
-                    );
-                  })}
+                  {/* Deduplicate variants by source slug to avoid duplicate badges */}
+                  {listing.variants
+                    .filter((v, i, arr) => arr.findIndex((x) => x.sourceSlug === v.sourceSlug) === i)
+                    .map((v) => {
+                      const tag = getSourceTag(v.sourceSlug);
+                      return (
+                        <span key={v.sourceSlug} className={`text-[10px] font-semibold tracking-wider uppercase ${tag.bg} ${tag.text} px-2.5 py-1`}>
+                          {tag.label}
+                        </span>
+                      );
+                    })}
                 </div>
               </div>
 

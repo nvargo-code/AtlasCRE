@@ -6,6 +6,9 @@ export const SOURCE_TAGS: Record<string, { label: string; bg: string; text: stri
   aln:             { label: "ALN",           bg: "bg-purple-50",  text: "text-purple-700" },
   email:           { label: "Email",         bg: "bg-amber-50",   text: "text-amber-700" },
 
+  // Commercial (hidden from residential search, but kept for badge rendering)
+  crexi:           { label: "CREXi",         bg: "bg-orange-50",  text: "text-orange-700" },
+
   // MLS feed (ABOR / any MLS)
   mls:             { label: "MLS",           bg: "bg-sky-50",     text: "text-sky-700" },
   mlsgrid:         { label: "MLS",           bg: "bg-sky-50",     text: "text-sky-700" },

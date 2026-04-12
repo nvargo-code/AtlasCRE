@@ -240,14 +240,77 @@ function stripPrefix(value: string): string {
 }
 
 /**
+ * Common street suffix mappings for deduplication.
+ * Maps full words and common variants to their abbreviation.
+ */
+const SUFFIX_ABBREVS: Record<string, string> = {
+  lane: "Ln", ln: "Ln",
+  road: "Rd", rd: "Rd",
+  drive: "Dr", dr: "Dr",
+  street: "St", st: "St",
+  avenue: "Ave", ave: "Ave",
+  boulevard: "Blvd", blvd: "Blvd",
+  circle: "Cir", cir: "Cir",
+  court: "Ct", ct: "Ct",
+  place: "Pl", pl: "Pl",
+  trail: "Trl", trl: "Trl",
+  way: "Way",
+  parkway: "Pkwy", pkwy: "Pkwy",
+  terrace: "Ter", ter: "Ter",
+  loop: "Loop",
+  pass: "Pass",
+  path: "Path",
+  run: "Run",
+  cove: "Cv", cv: "Cv",
+  crossing: "Xing", xing: "Xing",
+  highway: "Hwy", hwy: "Hwy",
+  bend: "Bend",
+  hill: "Hill",
+  ridge: "Ridge",
+  glen: "Glen",
+  hollow: "Holw", holw: "Holw",
+  point: "Pt", pt: "Pt",
+};
+
+/**
+ * Clean an address string: remove "None" values, deduplicate suffixes like "Ln Ln".
+ */
+function cleanAddress(raw: string): string {
+  // Remove "None" (case-insensitive, standalone word)
+  let addr = raw.replace(/\bNone\b/gi, "").replace(/\s{2,}/g, " ").trim();
+
+  // Deduplicate consecutive identical words (e.g., "Ln Ln" → "Ln")
+  addr = addr.replace(/\b(\w+)\s+\1\b/gi, "$1");
+
+  // Deduplicate suffix variants (e.g., "Road Rd" → "Rd", "Lane Ln" → "Ln")
+  const words = addr.split(/\s+/);
+  const cleaned: string[] = [];
+  for (let i = 0; i < words.length; i++) {
+    const word = words[i];
+    const nextWord = words[i + 1];
+    const wordNorm = SUFFIX_ABBREVS[word.toLowerCase()];
+    const nextNorm = nextWord ? SUFFIX_ABBREVS[nextWord.toLowerCase()] : undefined;
+    // If this word and the next both map to the same suffix abbreviation, skip this one
+    if (wordNorm && nextNorm && wordNorm === nextNorm) {
+      continue;
+    }
+    cleaned.push(word);
+  }
+  return cleaned.join(" ").trim();
+}
+
+/**
  * Build a full street address from components.
  */
 function buildAddress(p: MlsGridProperty): string {
+  let addr: string;
   if (p.UnparsedAddress?.trim()) {
-    return p.UnparsedAddress.trim();
+    addr = p.UnparsedAddress.trim();
+  } else {
+    const parts = [p.StreetNumber, p.StreetName, p.StreetSuffix].filter(Boolean);
+    addr = parts.join(" ").trim() || "";
   }
-  const parts = [p.StreetNumber, p.StreetName, p.StreetSuffix].filter(Boolean);
-  return parts.join(" ").trim() || "";
+  return cleanAddress(addr);
 }
 
 /**

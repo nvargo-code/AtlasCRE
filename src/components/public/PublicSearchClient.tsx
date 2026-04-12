@@ -39,11 +39,18 @@ type SimpleListing = {
 
 function formatPrice(amount: number | null, unit: string | null): string {
   if (!amount) return "Price N/A";
-  const formatted = amount >= 1000000
-    ? `$${(amount / 1000000).toFixed(1)}M`
-    : amount >= 1000
-    ? `$${(amount / 1000).toFixed(0)}K`
-    : `$${amount.toLocaleString()}`;
+  let formatted: string;
+  if (amount >= 1000000) {
+    const millions = amount / 1000000;
+    const remainder = millions % 1;
+    formatted = remainder >= 0.05 && remainder <= 0.95
+      ? `$${millions.toFixed(2)}M`
+      : `$${millions.toFixed(1)}M`;
+  } else if (amount >= 1000) {
+    formatted = `$${(amount / 1000).toFixed(0)}K`;
+  } else {
+    formatted = `$${amount.toLocaleString()}`;
+  }
   if (unit === "per_sf_yr") return `${formatted}/SF/YR`;
   if (unit === "per_sf_mo") return `${formatted}/SF/MO`;
   if (unit === "per_sf") return `${formatted}/SF`;
@@ -131,6 +138,7 @@ function SearchContent() {
   const [sourceDropOpen, setSourceDropOpen] = useState(false);
   const [sqftDropOpen, setSqftDropOpen] = useState(false);
   const [acresDropOpen, setAcresDropOpen] = useState(false);
+  const [filterVersion, setFilterVersion] = useState(0);
   const drawnPolygonRef = useRef<[number, number][] | null>(null);
 
   const boundsRef = useRef<ListingFilters["bounds"]>(undefined);
@@ -450,7 +458,7 @@ function SearchContent() {
           </form>
 
           {/* Quick filters */}
-          <div className="flex flex-wrap gap-3 mt-4">
+          <div key={filterVersion} className="flex flex-wrap gap-3 mt-4">
                 <input
                   type="number"
                   placeholder="Min Price"
@@ -677,7 +685,15 @@ function SearchContent() {
       )}
 
       {/* Filter chips */}
-      <SearchFilterChips filters={filters} onChange={setFilters} />
+      <SearchFilterChips filters={filters} onChange={(newFilters) => {
+        // Detect "Clear All" — only searchMode remains
+        const keys = Object.keys(newFilters).filter((k) => newFilters[k as keyof ListingFilters] !== undefined);
+        if (keys.length <= 1 && keys[0] === "searchMode") {
+          setQuery("");
+          setFilterVersion((v) => v + 1);
+        }
+        setFilters(newFilters);
+      }} />
 
       {/* Recently viewed */}
       <RecentlyViewed />
@@ -805,14 +821,17 @@ function SearchContent() {
                         Exclusive
                       </span>
                     )}
-                    {listing.variants?.map((v) => {
-                      const tag = getSourceTag(v.source.slug);
-                      return (
-                        <span key={v.source.slug} className={`text-[9px] font-semibold tracking-wider uppercase ${tag.bg} ${tag.text} px-1.5 py-0.5`}>
-                          {tag.label}
-                        </span>
-                      );
-                    })}
+                    {/* Deduplicate variants by source slug to avoid "MLS MLS" */}
+                    {listing.variants
+                      ?.filter((v, i, arr) => arr.findIndex((x) => x.source.slug === v.source.slug) === i)
+                      .map((v) => {
+                        const tag = getSourceTag(v.source.slug);
+                        return (
+                          <span key={v.source.slug} className={`text-[9px] font-semibold tracking-wider uppercase ${tag.bg} ${tag.text} px-1.5 py-0.5`}>
+                            {tag.label}
+                          </span>
+                        );
+                      })}
                   </div>
                   <div className="flex items-center justify-between mt-1">
                     <div className="flex items-center gap-3 text-[12px] text-mid-gray">

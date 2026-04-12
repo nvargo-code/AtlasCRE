@@ -1,18 +1,36 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
+
+const DISMISS_KEY = "valuation_cta_dismissed";
 
 export function ValuationCTA() {
+  const pathname = usePathname();
   const [visible, setVisible] = useState(false);
-  const [dismissed, setDismissed] = useState(false);
+  const [dismissed, setDismissed] = useState(true); // start dismissed, check localStorage
   const [submitted, setSubmitted] = useState(false);
   const [sending, setSending] = useState(false);
 
   useEffect(() => {
+    // Don't show on search page
+    if (pathname === "/search") return;
+
+    // Check if previously dismissed
+    const wasDismissed = localStorage.getItem(DISMISS_KEY);
+    if (wasDismissed) return;
+
+    setDismissed(false);
+
     // Show after 15 seconds on page
     const timer = setTimeout(() => setVisible(true), 15000);
     return () => clearTimeout(timer);
-  }, []);
+  }, [pathname]);
+
+  function handleDismiss() {
+    setDismissed(true);
+    localStorage.setItem(DISMISS_KEY, "true");
+  }
 
   if (dismissed || !visible) return null;
 
@@ -40,14 +58,14 @@ export function ValuationCTA() {
 
     setSending(false);
     setSubmitted(true);
-    setTimeout(() => setDismissed(true), 3000);
+    setTimeout(() => handleDismiss(), 3000);
   }
 
   return (
     <div className="fixed bottom-6 right-6 z-40 w-[340px] bg-white shadow-2xl border border-navy/10 animate-fade-in-up">
       {/* Close button */}
       <button
-        onClick={() => setDismissed(true)}
+        onClick={handleDismiss}
         className="absolute top-3 right-3 text-mid-gray hover:text-navy transition-colors"
       >
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
