@@ -138,6 +138,7 @@ function SearchContent() {
   const [sourceDropOpen, setSourceDropOpen] = useState(false);
   const [sqftDropOpen, setSqftDropOpen] = useState(false);
   const [acresDropOpen, setAcresDropOpen] = useState(false);
+  const [moreFiltersOpen, setMoreFiltersOpen] = useState(false);
   const [filterVersion, setFilterVersion] = useState(0);
   const drawnPolygonRef = useRef<[number, number][] | null>(null);
 
@@ -502,6 +503,21 @@ function SearchContent() {
               <option value="sale">For Sale</option>
               <option value="lease">For Lease</option>
             </select>
+            {/* More Filters toggle */}
+            <button
+              type="button"
+              onClick={() => setMoreFiltersOpen(!moreFiltersOpen)}
+              className={`text-[12px] tracking-wider px-4 py-2 border transition-colors flex items-center gap-1.5 ${
+                moreFiltersOpen ? "border-gold text-gold" : "bg-white/5 border-white/20 text-white/70 hover:border-gold/40"
+              }`}
+            >
+              More Filters
+              <svg className={`w-3 h-3 transition-transform ${moreFiltersOpen ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+            </button>
+          </div>
+          {/* Extended filters */}
+          {moreFiltersOpen && (
+          <div key={`more-${filterVersion}`} className="flex flex-wrap gap-3 mt-3">
             <select
               className="bg-white/5 border border-white/20 text-white/70 text-[12px] tracking-wider px-4 py-2 focus:outline-none focus:border-gold"
               onChange={(e) => setFilters({ ...filters, yearBuiltMin: e.target.value ? Number(e.target.value) : undefined })}
@@ -641,6 +657,7 @@ function SearchContent() {
               )}
             </div>
           </div>
+          )}
         </div>
       </div>
 
