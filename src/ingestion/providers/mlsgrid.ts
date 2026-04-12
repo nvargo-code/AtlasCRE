@@ -373,7 +373,9 @@ function normalizeProperty(p: MlsGridProperty): NormalizedListing | null {
 
     // Price
     priceAmount: p.ListPrice || undefined,
-    priceUnit: p.ListPrice ? "total" : undefined,
+    priceUnit: p.ListPrice
+      ? (p.PropertyType?.includes("Lease") ? "per_month" : "total")
+      : undefined,
 
     // Broker
     brokerName: p.ListAgentFullName || undefined,
