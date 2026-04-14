@@ -11,6 +11,7 @@ export function MortgageCalculator({ listPrice }: MortgageCalculatorProps) {
   const [downPercent, setDownPercent] = useState(20);
   const [rate, setRate] = useState(6.5);
   const [term, setTerm] = useState(30);
+  const [taxRate, setTaxRate] = useState(2.0);
 
   const calc = useMemo(() => {
     const downPayment = price * (downPercent / 100);
@@ -23,9 +24,9 @@ export function MortgageCalculator({ listPrice }: MortgageCalculatorProps) {
         monthlyPayment: loanAmount / numPayments,
         principal: loanAmount / numPayments,
         interest: 0,
-        tax: (price * 0.018) / 12, // ~1.8% Texas property tax
-        insurance: (price * 0.003) / 12, // ~0.3% homeowner's insurance
-        total: loanAmount / numPayments + (price * 0.018) / 12 + (price * 0.003) / 12,
+        tax: (price * (taxRate / 100)) / 12,
+        insurance: (price * 0.003) / 12,
+        total: loanAmount / numPayments + (price * (taxRate / 100)) / 12 + (price * 0.003) / 12,
         downPayment,
         loanAmount,
       };
@@ -37,7 +38,7 @@ export function MortgageCalculator({ listPrice }: MortgageCalculatorProps) {
 
     const firstMonthInterest = loanAmount * monthlyRate;
     const firstMonthPrincipal = monthlyPayment - firstMonthInterest;
-    const monthlyTax = (price * 0.018) / 12;
+    const monthlyTax = (price * (taxRate / 100)) / 12;
     const monthlyInsurance = (price * 0.003) / 12;
 
     return {
@@ -50,7 +51,7 @@ export function MortgageCalculator({ listPrice }: MortgageCalculatorProps) {
       downPayment,
       loanAmount,
     };
-  }, [price, downPercent, rate, term]);
+  }, [price, downPercent, rate, term, taxRate]);
 
   const fmt = (n: number) => `$${Math.round(n).toLocaleString()}`;
 
@@ -157,8 +158,23 @@ export function MortgageCalculator({ listPrice }: MortgageCalculatorProps) {
             <span className="text-mid-gray">Principal & Interest</span>
             <span className="text-navy font-medium">{fmt(calc.monthlyPayment)}</span>
           </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-mid-gray">Property Tax (est.)</span>
+          <div className="flex justify-between text-sm items-center">
+            <span className="text-mid-gray flex items-center gap-1.5">
+              Property Tax
+              <input
+                type="number"
+                min={1.8}
+                max={2.2}
+                step={0.05}
+                value={taxRate}
+                onChange={(e) => {
+                  const v = parseFloat(e.target.value);
+                  if (!isNaN(v) && v >= 0 && v <= 5) setTaxRate(v);
+                }}
+                className="w-14 text-center text-[11px] font-semibold text-navy bg-white border border-navy/15 rounded px-1 py-0.5 focus:outline-none focus:border-gold"
+              />
+              <span className="text-[11px] text-mid-gray">%</span>
+            </span>
             <span className="text-navy font-medium">{fmt(calc.tax)}</span>
           </div>
           <div className="flex justify-between text-sm">
